@@ -1,0 +1,63 @@
+{
+  "base": "http://127.0.0.1:8788",
+  "tag": "d1loop",
+  "startedAt": "2026-10-10T19:46:36.429Z",
+  "durationMs": 9587,
+  "fixture": {
+    "mainId": "92eb5fce79f2",
+    "episodes": [
+      {
+        "id": "92eb5fce79f2",
+        "title": "OpenAI’s Head of ChatGPT: We’re entering a new era of AI (again) | Tibo Sottiaux - Lenny's Podcast: Product | Career | Growth | 小宇宙 - 听播客，上小宇宙",
+        "state": "ready",
+        "show_title": "OpenAI’s Head of ChatGPT: We’re entering a new era of AI (again) | Tibo Sottiaux - Lenny's Podcast: Product | Career | Growth | 小宇宙 - 听播客，上小宇宙",
+        "seg_count": 670
+      },
+      {
+        "id": "b25af4d0b634",
+        "title": "Anthropic’s Quest to Give A.I. Morals",
+        "state": "ready",
+        "show_title": "Hard Fork",
+        "seg_count": 535
+      },
+      {
+        "id": "failedep001",
+        "title": "【测试】处理失败的单集",
+        "state": "failed",
+        "show_title": "Hard Fork",
+        "seg_count": 0
+      }
+    ],
+    "failed": {
+      "id": "failedep001",
+      "title": "【测试】处理失败的单集"
+    },
+    "brokenAudio": {
+      "id": "badaudio0001",
+      "title": "【测试】音频文件已丢失的单集"
+    }
+  },
+  "env": {
+    "base": "http://127.0.0.1:8788",
+    "phases": [
+      "main"
+    ]
+  },
+  "results": [
+    {
+      "id": "D1",
+      "area": "D 逐句播放",
+      "title": "不勾连播: 播完当前句停在句首等查词, 高亮不跳",
+      "repro": [
+        "关连播 → 点第 2 句 → 等这句播完"
+      ],
+      "status": "fail",
+      "error": "高亮应停在刚读完的这句: 实际 0 != 期望 1",
+      "ms": 9012,
+      "pageErrors": [],
+      "phase": "main"
+    }
+  ],
+  "pageErrors": [],
+  "hostErrors": []
+}

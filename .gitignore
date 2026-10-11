@@ -1,0 +1,21 @@
+# 密钥, 绝对不要提交
+.env
+
+# 数据:音频原件与数据库(体积大、含个人内容)
+data/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.uv/
+
+# 测评产物:测试库/日志/夹具快照都是本地生成的, 不入库
+# *.db* 连同 SQLite 的 -wal / -shm 一起排除
+.qa/*.db*
+.qa/*.log
+.qa/fixture.json
+.qa/env.json
+
+# macOS
+.DS_Store

@@ -1,0 +1,156 @@
+[
+  {
+    "id": "D-01",
+    "sev": "blocker",
+    "area": "鉴权 / 启动",
+    "title": "设了 ET_TOKEN 之后整个应用打不开(页面外壳也是 401 JSON)",
+    "symptom": "按 README 建议在局域网/外网设置 ET_TOKEN 后,浏览器打开首页只看到 {\"detail\":\"unauthorized\"},连\"把 token 填进去\"的机会都没有。",
+    "root": "app.py 的中间件只放行 /health,前端也完全没有 token 的概念(全文件搜不到 token 一词)。",
+    "fix": "外壳与静态资源(/、manifest、icon)放行;首页把 token 注入页面;前端 api() 统一带上 Authorization,并支持 ?token= 手输一次后存本地、把地址栏里的 token 抹掉;认证方案大小写不敏感。",
+    "verify": "K1–K6(6 条鉴权用例,独立实例 + 真 token)全绿",
+    "files": ["englishtool/app.py", "web/index.html"]
+  },
+  {
+    "id": "D-02",
+    "sev": "major",
+    "area": "阅读器 / 音频",
+    "title": "✕ 停止播放器之后,再点任何句子都放不出声(静默失败)",
+    "symptom": "点播放条的 ✕ 收起播放器,然后再点正文里的句子:高亮会动、状态栏显示\"播放中\",但一点声音都没有,也没有任何报错。",
+    "root": "stopAndClose() 只把 audio.src 清空、把 playing.loaded 置 false;而 loadEpisode() 判断\"这一集已经加载过\"时只看 playing.loaded 标记。第二次进入时 src 是空的,于是 set currentTime / play() 全部作用在一个空源上。",
+    "fix": "① 停播时把 audio 元件整个放掉(而不是只清 src);② loadEpisode() 判定\"已加载\"时同时检查 src 还在不在;③ 清空 src / 换源过程中浏览器补发的 MEDIA_ERR_SRC_NOT_SUPPORTED 不再当作\"音频加载失败\"报给用户。",
+    "verify": "E9 + 自动化过程中真实复现并回归",
+    "files": ["web/index.html"]
+  },
+  {
+    "id": "D-03",
+    "sev": "major",
+    "area": "阅读器 / 音频",
+    "title": "audio 元件一旦离开文档,后续所有播放静默失效",
+    "symptom": "从列表进正文、点句子,页面看起来一切正常(底部播放条在报\"播放中\"),但元素其实不在 DOM 里,声音永远出不来。",
+    "root": "ensureAudio() 把 audio 缓存在脚本级变量里,只要它被移出过 DOM(页面被别的脚本动过、或浏览器回收了节点),就再也回不到文档里。",
+    "fix": "ensureAudio() 用 isConnected 兜底:元件不在文档里就丢掉重建。",
+    "verify": "J4(快速连点)+ 自动化清理流程下的回归",
+    "files": ["web/index.html"]
+  },
+  {
+    "id": "D-04",
+    "sev": "major",
+    "area": "设置持久化",
+    "title": "字号设置不持久化,刷新就回到默认",
+    "symptom": "语速、连播、中译、播放位置都记得住,唯独字号每次打开都要重调。",
+    "root": "字号只写了 CSS 变量,既没写 localStorage,启动时也没有读回来。",
+    "fix": "字号写进 localStorage(et.fs),启动时回填。",
+    "verify": "F2(真刷新后字号仍是 24px)",
+    "files": ["web/index.html"]
+  },
+  {
+    "id": "D-05",
+    "sev": "major",
+    "area": "路由 / 列表",
+    "title": "冷启动直接进某一集时,列表永远是空的",
+    "symptom": "从书签/分享链接打开 /#<单集>,读完点「← 列表」——列表显示\"还没有内容。粘贴一个播客链接开始。\",要手动刷新才出得来。",
+    "root": "启动逻辑是 if(hash) 进正文 else 拉列表;直接带 hash 进来时 loadList() 从来没被调用过。",
+    "fix": "列表永远拉一次,与 hash 无关。",
+    "verify": "A1/B1(冷启动带 hash 的路径)+ 真机回归",
+    "files": ["web/index.html"]
+  },
+  {
+    "id": "D-06",
+    "sev": "major",
+    "area": "鉴权 / 前端",
+    "title": "没设 token 的部署里,前端会带一个假 token 去请求",
+    "symptom": "未开启鉴权的部署中,ET_TOKEN 变成字面量 '__ET_TOKEN__';此时从 URL 用 ?token=xxx 进来的 token 永远不会被保存下来(进不去也退不出)。",
+    "root": "占位符判断写反了(注入的占位符本身被当成\"服务端已注入 token\")。",
+    "fix": "占位符一律视为\"没有 token\";真 token 才注入。",
+    "verify": "K1–K6 + 真机冒烟(localStorage 里不再出现假 token)",
+    "files": ["web/index.html"]
+  },
+  {
+    "id": "D-07",
+    "sev": "major",
+    "area": "稳定性",
+    "title": "worker 挂掉之后 /health 还在报 running:true,导入永远排队",
+    "symptom": "后台批处理一旦异常退出,界面上不做任何提示;导入的链接永远停在\"排队\",用户不知道发生了什么。",
+    "root": "running 是一个启动时置 True、之后再不更新的布尔量;create_task 的异常没有任何人读。",
+    "fix": "worker 任务挂 done-callback:异常时打印并清 running;/health 的 running 由任务真实状态推导,另有 worker_healthy 字段。",
+    "verify": "I8 + 代码审查(用不可打开的 DB 路径复现过死掉的 worker)",
+    "files": ["englishtool/app.py", "englishtool/pipeline.py"]
+  },
+  {
+    "id": "D-08",
+    "sev": "major",
+    "area": "存储",
+    "title": "生词重复入库,而且返回的 id 是旧的,客户端永远删不掉自己刚建的那条",
+    "symptom": "同一句话里连着标记两次\"生词\",库里会出现两行;删掉返回的那个 id 之后,另一行还在,界面上看起来\"删了没反应\"。",
+    "root": "SQLite 的 UNIQUE 认为 NULL 互不相等;episode_id/seg_idx 为 NULL 时 INSERT OR IGNORE 完全不去重,随后的 SELECT ... AND seg_idx IS ? 又命中了最早那行。",
+    "fix": "改成\"按归一化键先查后插\",返回真正插入的那一行 id;接口层对 seg_idx / episode_id 做类型校验。",
+    "verify": "后端回归(连续两次 POST 只留一行、返回同一个 id)",
+    "files": ["englishtool/db.py", "englishtool/app.py"]
+  },
+  {
+    "id": "D-09",
+    "sev": "major",
+    "area": "可恢复性",
+    "title": "中断的单集永远不会被重新处理,但日志说\"续跑 1 个\"",
+    "symptom": "进程在转录中途被杀,重启后那一集永远停在\"转录中…\",既不继续也不失败。",
+    "root": "续跑逻辑对非 pending 状态调用了只认 pending 的原子抢占,于是一个都没抢到,却仍然打印了\"续跑 N 个\"。",
+    "fix": "续跑前先把中间态回退成 pending,再抢占;日志改成\"实际续跑/总数\"。",
+    "verify": "代码审查 + 状态机回归",
+    "files": ["englishtool/pipeline.py"]
+  },
+  {
+    "id": "D-10",
+    "sev": "minor",
+    "area": "前端错误处理",
+    "title": "卡在中间态的单集没有重试入口,失败态也不显示原因",
+    "symptom": "下载中/转录中/分段中这些状态写库时 error 为空,界面因此既不显示原因也不给重试按钮,只能永久等。",
+    "root": "重试按钮的显示条件是 error 非空。",
+    "fix": "只要不是 ready 就给出状态 + 原因 + 重试按钮;重试失败要显示失败原因。",
+    "verify": "I6 + 失败态夹具",
+    "files": ["web/index.html"]
+  },
+  {
+    "id": "D-11",
+    "sev": "minor",
+    "area": "中译",
+    "title": "半截中译会被当成\"已翻译完成\",剩下的一半永远补不上",
+    "symptom": "翻译按批写入,一次批次失败就留下半集中译;再点中译开关,后端回答\"已经翻过\",于是文章一半有中文一半没有。",
+    "root": "has_translations() 只判断\"有没有一行\",而不是覆盖率。",
+    "fix": "改为按覆盖率判断(≥95% 才算完成),补翻时已有句子不会重复花钱;接口返回已翻/总句数。",
+    "verify": "代码审查 + /translate 回归(返回 translated/total)",
+    "files": ["englishtool/db.py", "englishtool/app.py"]
+  },
+  {
+    "id": "D-12",
+    "sev": "minor",
+    "area": "健壮性",
+    "title": "上游返回非 JSON / 连不上时,释义卡显示 500 Internal Server Error",
+    "symptom": "网络抖动或网关错误页会让释义卡显示一句英文的 Internal Server Error,而不是\"连不上释义服务\"。",
+    "root": "define.py 直接 r.json()[\"choices\"]…;接口层只捕获 RuntimeError。",
+    "fix": "把 HTTP 错误与解析错误都翻译成人话,接口返回 503。",
+    "verify": "代码审查 + 6 种上游异常形态的进程内复现",
+    "files": ["englishtool/define.py", "englishtool/app.py"]
+  },
+  {
+    "id": "D-13",
+    "sev": "minor",
+    "area": "健壮性",
+    "title": "客户端传错 JSON 类型会变成 500,以及换源过程中的假\"加载失败\"",
+    "symptom": "{\"url\":123} / {\"lemma\":[]} 这类明显的客户端错误返回 500;清空音频源时状态栏会闪一句\"音频加载失败\"。",
+    "root": "处理函数直接对非字符串调 .strip();error 监听不区分\"真的加载失败\"与\"清空 src 时浏览器必发的补发事件\"。",
+    "fix": "入参统一走类型校验(4xx);error 事件在无源/换源场景下忽略。",
+    "verify": "后端回归(400/422)+ E9 回归",
+    "files": ["englishtool/app.py", "web/index.html"]
+  },
+  {
+    "id": "D-14",
+    "sev": "nit",
+    "area": "存储",
+    "title": "句子/段落的替换不是原子的(DELETE 先提交)",
+    "symptom": "目前调用点只在空表时执行,没暴露出来;但传入生成器时中途抛错会留下\"删了旧的、没写新的\"的空集。",
+    "root": "isolation_level=None + 分两条语句执行,且没有显式事务。",
+    "fix": "先物化数据,再放进 BEGIN IMMEDIATE 事务里整体替换。",
+    "verify": "代码审查(未做成自动化用例)",
+    "files": ["englishtool/db.py"]
+  }
+]

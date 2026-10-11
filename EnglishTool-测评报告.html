@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EnglishTool 真实浏览器测评报告</title>
+<style>
+:root{
+  --paper:#f2efe6; --paper2:#e9e5d9; --ink:#17160f; --ink2:#3d3a2c; --dim:#7d7866;
+  --rule:#d3ccb8; --rule2:#bdb49b;
+  --ok:#1c6b47; --okbg:#dcebe0; --bad:#a3322a; --badbg:#f3ddd9;
+  --amber:#9a5b09; --amberbg:#f0e2c8;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:var(--mono);font-size:14px;line-height:1.65;
+  background-image:
+    radial-gradient(circle at 12% 8%, #ffffff88, transparent 45%),
+    repeating-linear-gradient(0deg,#00000005 0 1px,transparent 1px 28px);
+}
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px 120px}
+a{color:inherit}
+
+/* ---------- 报头 ---------- */
+header.masthead{padding:52px 0 26px;border-bottom:3px double var(--ink)}
+.stamp{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
+.kicker{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--dim)}
+h1{font-family:var(--serif);font-size:clamp(30px,5vw,52px);line-height:1.02;margin:10px 0 6px;letter-spacing:-.015em}
+h1 em{font-style:italic;color:var(--amber)}
+.sub{font-size:13px;color:var(--ink2);max-width:56ch}
+.meta{text-align:right;font-size:11.5px;color:var(--dim);line-height:1.9;white-space:nowrap}
+.meta b{color:var(--ink);font-weight:600}
+
+/* ---------- 记分板 ---------- */
+.score{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:0;margin:26px 0 8px;border:1px solid var(--rule2);background:#ffffff5c}
+.score div{padding:14px 16px;border-right:1px solid var(--rule)}
+.score div:last-child{border-right:0}
+.score .n{font-family:var(--serif);font-size:30px;line-height:1;display:block}
+.score .l{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-top:7px;display:block}
+.score .n.ok{color:var(--ok)} .score .n.bad{color:var(--bad)} .score .n.amber{color:var(--amber)}
+
+/* ---------- 段落 ---------- */
+section{padding:44px 0 6px;border-top:1px solid var(--rule)}
+h2{font-family:var(--serif);font-size:26px;margin:0 0 4px;letter-spacing:-.01em}
+h2 .num{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--dim);display:block;margin-bottom:8px}
+h3{font-size:13px;letter-spacing:.06em;text-transform:uppercase;margin:30px 0 10px;color:var(--ink2)}
+h4{font-family:var(--serif);font-size:17.5px;margin:6px 0 10px;line-height:1.3}
+p{margin:0 0 12px;max-width:82ch;color:var(--ink2)}
+p strong{color:var(--ink)}
+ul{max-width:82ch;color:var(--ink2);padding-left:20px}
+li{margin-bottom:6px}
+code{font-size:12px;background:#0000000d;border:1px solid var(--rule);border-radius:3px;padding:1px 5px;white-space:nowrap}
+
+.verdict{border-left:3px solid var(--ok);background:#ffffff5c;padding:16px 20px;margin:18px 0}
+.verdict.warn{border-color:var(--amber)}
+.verdict p{margin:0;font-size:14.5px;color:var(--ink)}
+
+/* ---------- 缺陷卡 ---------- */
+.defect{border:1px solid var(--rule2);background:#ffffff6b;margin:0 0 14px;padding:16px 18px 6px;position:relative}
+.defect:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--dim)}
+.defect.sev-blocker:before{background:var(--bad)}
+.defect.sev-major:before{background:var(--amber)}
+.defect.sev-minor:before{background:#7d7866}
+.defect.sev-nit:before{background:var(--rule2)}
+.defect header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+.did{font-weight:700;letter-spacing:.16em}
+.sev{border:1px solid currentColor;padding:0 7px;border-radius:99px;font-size:10px}
+.sev-blocker{color:var(--bad)} .sev-major{color:var(--amber)}
+.defect.sev-minor .sev{color:var(--ink2)} .defect.sev-nit .sev{color:var(--dim)}
+.defect.sev-blocker .sev{color:var(--bad)}
+.defect.sev-major .sev{color:var(--amber)}
+.darea{color:var(--dim);margin-left:auto}
+.defect dl{display:grid;grid-template-columns:64px 1fr;gap:2px 14px;margin:0 0 12px}
+.defect dt{font-size:11px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;padding-top:3px}
+.defect dd{margin:0 0 6px;font-size:13.5px;color:var(--ink2)}
+.defect dd.files{display:flex;gap:6px;flex-wrap:wrap}
+
+/* ---------- 用例表 ---------- */
+table{width:100%;border-collapse:collapse;margin:8px 0 18px;background:#ffffff5c}
+th{text-align:left;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);padding:8px 10px;border-bottom:1px solid var(--rule2);font-weight:600}
+td{padding:7px 10px;border-bottom:1px solid var(--rule);font-size:12.5px;vertical-align:top;color:var(--ink2)}
+tr.case.bad td{background:var(--badbg)}
+td.cid{white-space:nowrap;font-weight:600;color:var(--ink)}
+td.cid .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ok);margin-right:7px;vertical-align:1px}
+tr.case.bad td.cid .dot{background:var(--bad)}
+td.ctitle{color:var(--ink)}
+td.crepro{color:var(--dim);font-size:11.5px;min-width:240px}
+td.cms{text-align:right;color:var(--dim);white-space:nowrap}
+td.cres{white-space:nowrap;color:var(--ok);font-size:11.5px}
+tr.case.bad td.cres{color:var(--bad)}
+.areahd{display:flex;align-items:baseline;gap:12px;margin:26px 0 2px}
+.areahd h3{margin:0;font-size:13px}
+.areahd .cnt{font-size:11px;color:var(--dim)}
+
+/* ---------- 条形图 ---------- */
+.bars{display:grid;gap:6px;margin:14px 0 22px}
+.bar{display:grid;grid-template-columns:180px 1fr 54px;align-items:center;gap:12px;font-size:11.5px}
+.bar .track{height:12px;background:#0000000f;border:1px solid var(--rule);display:flex}
+.bar .fill{background:var(--ok);height:100%}
+.bar .fill.bad{background:var(--bad)}
+.bar .v{text-align:right;color:var(--dim)}
+
+pre{background:#17160f;color:#e8e4d6;padding:14px 16px;overflow-x:auto;font-size:12.5px;border-radius:2px;border:1px solid #000}
+pre .c{color:#8f8a76}
+footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--rule);color:var(--dim);font-size:11.5px;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+@media (max-width:720px){
+  .wrap{padding:0 16px 80px}
+  .defect dl{grid-template-columns:1fr}
+  .defect dt{padding-top:8px}
+  .bar{grid-template-columns:110px 1fr 44px}
+  td.crepro{display:none}
+  th:nth-child(3){display:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <div class="stamp">
+    <div>
+      <div class="kicker">端到端测评 · 真实浏览器 · 无 mock</div>
+      <h1>EnglishTool<br><em>能发给外人用了吗</em></h1>
+      <p class="sub">对「粘贴播客链接 → 转录 → 精读」这条私人阅读器做的场景化实测:
+      56 条用例在真实 Chromium 里逐条演一遍,另有 14 个缺陷被复现、定位、修复、回归。</p>
+    </div>
+    <div class="meta">
+      被测版本 <b>web r9</b><br>
+      实例 <b>127.0.0.1:8788</b>(数据副本)<br>
+      鉴权实例 <b>:8789</b>(ET_TOKEN)<br>
+      浏览器 <b>Chromium 152 · 1280×738 / 390×844</b><br>
+      报告生成 <b>2026-10-11 03:51</b>
+    </div>
+  </div>
+
+  <div class="score">
+    <div><span class="n ok">56/56</span><span class="l">用例通过</span></div>
+    <div><span class="n bad">1</span><span class="l">阻断级缺陷</span></div>
+    <div><span class="n amber">8</span><span class="l">严重级缺陷</span></div>
+    <div><span class="n">5</span><span class="l">一般 / 细节</span></div>
+    <div><span class="n">85s</span><span class="l">整轮时长</span></div>
+    <div><span class="n">0</span><span class="l">未捕获异常</span></div>
+  </div>
+</header>
+
+<section>
+  <h2><span class="num">01 / 结论</span>能不能发出去</h2>
+  <div class="verdict">
+    <p><strong>可以发出去做小范围外部测试了。</strong>阻断级与严重级缺陷已全部修复并回归:
+    56 条场景用例全绿,零未捕获异常,桌面与手机两种视口、离线、鉴权、失败态、音频缺失这些边角路径都跑通了。
+    真实实例(127.0.0.1:8787)也做了人工冒烟:进正文、点句播放、查词卡片、返回列表后音频不断,全部正常。</p>
+  </div>
+  <div class="verdict warn">
+    <p><strong>但有两件事必须先说清楚:</strong>① 本轮验证的是<strong>阅读与播放这一段</strong>;
+    导入/下载/转录/分段这条依赖网络与 GPU 的管线只做了失败路径与状态机验证,没有端到端跑一遍真实播客
+    (一次转录 6~10 分钟,不适合放进回归)。
+    ② 自动化用的是真实但合成的音频与时间轴;真机上「耳朵听到的」质量(断句位置、倍速下的自然度)仍需你本人听一遍。</p>
+  </div>
+  <h3>各场景域通过情况</h3>
+  <div class="bars"><div class="bar"><span>A 列表页</span>
+      <span class="track"><span class="fill" style="width:100.0%"></span></span>
+      <span class="v">5/5</span></div><div class="bar"><span>B 阅读页</span>
+      <span class="track"><span class="fill" style="width:100.0%"></span></span>
+      <span class="v">8/8</span></div><div class="bar"><span>C 释义卡</span>
+      <span class="track"><span class="fill" style="width:100.0%"></span></span>
+      <span class="v">4/4</span></div><div class="bar"><span>D 逐句播放</span>
+      <span class="track"><span class="fill" style="width:100.0%"></span></span>
+      <span class="v">5/5</span></div><div class="bar"><span>E 播放器</span>
+      <span class="track"><span class="fill" style="width:100.0%"></span></span>
+      <span class="v">9/9</span></div><div class="bar"><span>G 中译</span>
+      <span class="track"><span class="fill" style="width:100.0%"></span></span>
+      <span class="v">2/2</span></div><div class="bar"><span>I 路由</span>
+      <span class="track"><span class="fill" style="width:100.0%"></span></span>
+      <span class="v">8/8</span></div><div class="bar"><span>J 细节</span>
+      <span class="track"><span class="fill" style="width:100.0%"></span></span>
+      <span class="v">5/5</span></div><div class="bar"><span>H 移动端</span>
+      <span class="track"><span class="fill" style="width:100.0%"></span></span>
+      <span class="v">4/4</span></div><div class="bar"><span>K 鉴权</span>
+      <span class="track"><span class="fill" style="width:100.0%"></span></span>
+      <span class="v">6/6</span></div></div>
+  <h3>这一轮做了什么</h3>
+  <ul>
+    <li><strong>真实浏览器,不是模拟器</strong>:每一条用例都是一次真操作 —— 算好坐标、做命中测试(点到的是不是你以为的那个元素)、
+    派发完整的 pointer/mouse 事件序列、读回页面真实状态。没有 mock 任何应用逻辑。</li>
+    <li><strong>跑在数据副本上</strong>:测试实例用 <code>.qa/test.db</code>(真实库的拷贝)和从真实音频派生的短夹具,
+    你的 <code>data/app.db</code> 与原始音频全程没被碰过。</li>
+    <li><strong>边角场景真的造出来了</strong>:音频文件丢失的单集、处理失败的单集、60 秒可控时间轴的短音频、
+    开了鉴权的第二个实例、被掐断接口的离线态。</li>
+    <li><strong>发现即修复即回归</strong>:14 个缺陷都是先复现出可观察的症状、定位到根因、改代码,再用同一批用例回归。</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="num">02 / 缺陷登记</span>14 个被复现并修掉的问题</h2>
+  <p>按严重度排序。每条都写了「用户会看到什么」「为什么」「怎么修的」「怎么确认修好了」。
+  其中 1 个阻断级、8 个严重级。</p>
+  <article class="defect sev-blocker" id="D-01">
+  <header>
+    <span class="did">D-01</span>
+    <span class="sev">阻断</span>
+    <span class="darea">鉴权 / 启动</span>
+  </header>
+  <h4>设了 ET_TOKEN 之后整个应用打不开(页面外壳也是 401 JSON)</h4>
+  <dl>
+    <dt>表现</dt><dd>按 README 建议在局域网/外网设置 ET_TOKEN 后,浏览器打开首页只看到 {&quot;detail&quot;:&quot;unauthorized&quot;},连&quot;把 token 填进去&quot;的机会都没有。</dd>
+    <dt>根因</dt><dd>app.py 的中间件只放行 /health,前端也完全没有 token 的概念(全文件搜不到 token 一词)。</dd>
+    <dt>修复</dt><dd>外壳与静态资源(/、manifest、icon)放行;首页把 token 注入页面;前端 api() 统一带上 Authorization,并支持 ?token= 手输一次后存本地、把地址栏里的 token 抹掉;认证方案大小写不敏感。</dd>
+    <dt>验证</dt><dd>K1–K6(6 条鉴权用例,独立实例 + 真 token)全绿</dd>
+    <dt>涉及</dt><dd class="files"><code>englishtool/app.py</code><code>web/index.html</code></dd>
+  </dl>
+</article>
+<article class="defect sev-major" id="D-02">
+  <header>
+    <span class="did">D-02</span>
+    <span class="sev">严重</span>
+    <span class="darea">阅读器 / 音频</span>
+  </header>
+  <h4>✕ 停止播放器之后,再点任何句子都放不出声(静默失败)</h4>
+  <dl>
+    <dt>表现</dt><dd>点播放条的 ✕ 收起播放器,然后再点正文里的句子:高亮会动、状态栏显示&quot;播放中&quot;,但一点声音都没有,也没有任何报错。</dd>
+    <dt>根因</dt><dd>stopAndClose() 只把 audio.src 清空、把 playing.loaded 置 false;而 loadEpisode() 判断&quot;这一集已经加载过&quot;时只看 playing.loaded 标记。第二次进入时 src 是空的,于是 set currentTime / play() 全部作用在一个空源上。</dd>
+    <dt>修复</dt><dd>① 停播时把 audio 元件整个放掉(而不是只清 src);② loadEpisode() 判定&quot;已加载&quot;时同时检查 src 还在不在;③ 清空 src / 换源过程中浏览器补发的 MEDIA_ERR_SRC_NOT_SUPPORTED 不再当作&quot;音频加载失败&quot;报给用户。</dd>
+    <dt>验证</dt><dd>E9 + 自动化过程中真实复现并回归</dd>
+    <dt>涉及</dt><dd class="files"><code>web/index.html</code></dd>
+  </dl>
+</article>
+<article class="defect sev-major" id="D-03">
+  <header>
+    <span class="did">D-03</span>
+    <span class="sev">严重</span>
+    <span class="darea">阅读器 / 音频</span>
+  </header>
+  <h4>audio 元件一旦离开文档,后续所有播放静默失效</h4>
+  <dl>
+    <dt>表现</dt><dd>从列表进正文、点句子,页面看起来一切正常(底部播放条在报&quot;播放中&quot;),但元素其实不在 DOM 里,声音永远出不来。</dd>
+    <dt>根因</dt><dd>ensureAudio() 把 audio 缓存在脚本级变量里,只要它被移出过 DOM(页面被别的脚本动过、或浏览器回收了节点),就再也回不到文档里。</dd>
+    <dt>修复</dt><dd>ensureAudio() 用 isConnected 兜底:元件不在文档里就丢掉重建。</dd>
+    <dt>验证</dt><dd>J4(快速连点)+ 自动化清理流程下的回归</dd>
+    <dt>涉及</dt><dd class="files"><code>web/index.html</code></dd>
+  </dl>
+</article>
+<article class="defect sev-major" id="D-04">
+  <header>
+    <span class="did">D-04</span>
+    <span class="sev">严重</span>
+    <span class="darea">设置持久化</span>
+  </header>
+  <h4>字号设置不持久化,刷新就回到默认</h4>
+  <dl>
+    <dt>表现</dt><dd>语速、连播、中译、播放位置都记得住,唯独字号每次打开都要重调。</dd>
+    <dt>根因</dt><dd>字号只写了 CSS 变量,既没写 localStorage,启动时也没有读回来。</dd>
+    <dt>修复</dt><dd>字号写进 localStorage(et.fs),启动时回填。</dd>
+    <dt>验证</dt><dd>F2(真刷新后字号仍是 24px)</dd>
+    <dt>涉及</dt><dd class="files"><code>web/index.html</code></dd>
+  </dl>
+</article>
+<article class="defect sev-major" id="D-05">
+  <header>
+    <span class="did">D-05</span>
+    <span class="sev">严重</span>
+    <span class="darea">路由 / 列表</span>
+  </header>
+  <h4>冷启动直接进某一集时,列表永远是空的</h4>
+  <dl>
+    <dt>表现</dt><dd>从书签/分享链接打开 /#&lt;单集&gt;,读完点「← 列表」——列表显示&quot;还没有内容。粘贴一个播客链接开始。&quot;,要手动刷新才出得来。</dd>
+    <dt>根因</dt><dd>启动逻辑是 if(hash) 进正文 else 拉列表;直接带 hash 进来时 loadList() 从来没被调用过。</dd>
+    <dt>修复</dt><dd>列表永远拉一次,与 hash 无关。</dd>
+    <dt>验证</dt><dd>A1/B1(冷启动带 hash 的路径)+ 真机回归</dd>
+    <dt>涉及</dt><dd class="files"><code>web/index.html</code></dd>
+  </dl>
+</article>
+<article class="defect sev-major" id="D-06">
+  <header>
+    <span class="did">D-06</span>
+    <span class="sev">严重</span>
+    <span class="darea">鉴权 / 前端</span>
+  </header>
+  <h4>没设 token 的部署里,前端会带一个假 token 去请求</h4>
+  <dl>
+    <dt>表现</dt><dd>未开启鉴权的部署中,ET_TOKEN 变成字面量 &#x27;__ET_TOKEN__&#x27;;此时从 URL 用 ?token=xxx 进来的 token 永远不会被保存下来(进不去也退不出)。</dd>
+    <dt>根因</dt><dd>占位符判断写反了(注入的占位符本身被当成&quot;服务端已注入 token&quot;)。</dd>
+    <dt>修复</dt><dd>占位符一律视为&quot;没有 token&quot;;真 token 才注入。</dd>
+    <dt>验证</dt><dd>K1–K6 + 真机冒烟(localStorage 里不再出现假 token)</dd>
+    <dt>涉及</dt><dd class="files"><code>web/index.html</code></dd>
+  </dl>
+</article>
+<article class="defect sev-major" id="D-07">
+  <header>
+    <span class="did">D-07</span>
+    <span class="sev">严重</span>
+    <span class="darea">稳定性</span>
+  </header>
+  <h4>worker 挂掉之后 /health 还在报 running:true,导入永远排队</h4>
+  <dl>
+    <dt>表现</dt><dd>后台批处理一旦异常退出,界面上不做任何提示;导入的链接永远停在&quot;排队&quot;,用户不知道发生了什么。</dd>
+    <dt>根因</dt><dd>running 是一个启动时置 True、之后再不更新的布尔量;create_task 的异常没有任何人读。</dd>
+    <dt>修复</dt><dd>worker 任务挂 done-callback:异常时打印并清 running;/health 的 running 由任务真实状态推导,另有 worker_healthy 字段。</dd>
+    <dt>验证</dt><dd>I8 + 代码审查(用不可打开的 DB 路径复现过死掉的 worker)</dd>
+    <dt>涉及</dt><dd class="files"><code>englishtool/app.py</code><code>englishtool/pipeline.py</code></dd>
+  </dl>
+</article>
+<article class="defect sev-major" id="D-08">
+  <header>
+    <span class="did">D-08</span>
+    <span class="sev">严重</span>
+    <span class="darea">存储</span>
+  </header>
+  <h4>生词重复入库,而且返回的 id 是旧的,客户端永远删不掉自己刚建的那条</h4>
+  <dl>
+    <dt>表现</dt><dd>同一句话里连着标记两次&quot;生词&quot;,库里会出现两行;删掉返回的那个 id 之后,另一行还在,界面上看起来&quot;删了没反应&quot;。</dd>
+    <dt>根因</dt><dd>SQLite 的 UNIQUE 认为 NULL 互不相等;episode_id/seg_idx 为 NULL 时 INSERT OR IGNORE 完全不去重,随后的 SELECT ... AND seg_idx IS ? 又命中了最早那行。</dd>
+    <dt>修复</dt><dd>改成&quot;按归一化键先查后插&quot;,返回真正插入的那一行 id;接口层对 seg_idx / episode_id 做类型校验。</dd>
+    <dt>验证</dt><dd>后端回归(连续两次 POST 只留一行、返回同一个 id)</dd>
+    <dt>涉及</dt><dd class="files"><code>englishtool/db.py</code><code>englishtool/app.py</code></dd>
+  </dl>
+</article>
+<article class="defect sev-major" id="D-09">
+  <header>
+    <span class="did">D-09</span>
+    <span class="sev">严重</span>
+    <span class="darea">可恢复性</span>
+  </header>
+  <h4>中断的单集永远不会被重新处理,但日志说&quot;续跑 1 个&quot;</h4>
+  <dl>
+    <dt>表现</dt><dd>进程在转录中途被杀,重启后那一集永远停在&quot;转录中…&quot;,既不继续也不失败。</dd>
+    <dt>根因</dt><dd>续跑逻辑对非 pending 状态调用了只认 pending 的原子抢占,于是一个都没抢到,却仍然打印了&quot;续跑 N 个&quot;。</dd>
+    <dt>修复</dt><dd>续跑前先把中间态回退成 pending,再抢占;日志改成&quot;实际续跑/总数&quot;。</dd>
+    <dt>验证</dt><dd>代码审查 + 状态机回归</dd>
+    <dt>涉及</dt><dd class="files"><code>englishtool/pipeline.py</code></dd>
+  </dl>
+</article>
+<article class="defect sev-minor" id="D-10">
+  <header>
+    <span class="did">D-10</span>
+    <span class="sev">一般</span>
+    <span class="darea">前端错误处理</span>
+  </header>
+  <h4>卡在中间态的单集没有重试入口,失败态也不显示原因</h4>
+  <dl>
+    <dt>表现</dt><dd>下载中/转录中/分段中这些状态写库时 error 为空,界面因此既不显示原因也不给重试按钮,只能永久等。</dd>
+    <dt>根因</dt><dd>重试按钮的显示条件是 error 非空。</dd>
+    <dt>修复</dt><dd>只要不是 ready 就给出状态 + 原因 + 重试按钮;重试失败要显示失败原因。</dd>
+    <dt>验证</dt><dd>I6 + 失败态夹具</dd>
+    <dt>涉及</dt><dd class="files"><code>web/index.html</code></dd>
+  </dl>
+</article>
+<article class="defect sev-minor" id="D-11">
+  <header>
+    <span class="did">D-11</span>
+    <span class="sev">一般</span>
+    <span class="darea">中译</span>
+  </header>
+  <h4>半截中译会被当成&quot;已翻译完成&quot;,剩下的一半永远补不上</h4>
+  <dl>
+    <dt>表现</dt><dd>翻译按批写入,一次批次失败就留下半集中译;再点中译开关,后端回答&quot;已经翻过&quot;,于是文章一半有中文一半没有。</dd>
+    <dt>根因</dt><dd>has_translations() 只判断&quot;有没有一行&quot;,而不是覆盖率。</dd>
+    <dt>修复</dt><dd>改为按覆盖率判断(≥95% 才算完成),补翻时已有句子不会重复花钱;接口返回已翻/总句数。</dd>
+    <dt>验证</dt><dd>代码审查 + /translate 回归(返回 translated/total)</dd>
+    <dt>涉及</dt><dd class="files"><code>englishtool/db.py</code><code>englishtool/app.py</code></dd>
+  </dl>
+</article>
+<article class="defect sev-minor" id="D-12">
+  <header>
+    <span class="did">D-12</span>
+    <span class="sev">一般</span>
+    <span class="darea">健壮性</span>
+  </header>
+  <h4>上游返回非 JSON / 连不上时,释义卡显示 500 Internal Server Error</h4>
+  <dl>
+    <dt>表现</dt><dd>网络抖动或网关错误页会让释义卡显示一句英文的 Internal Server Error,而不是&quot;连不上释义服务&quot;。</dd>
+    <dt>根因</dt><dd>define.py 直接 r.json()[&quot;choices&quot;]…;接口层只捕获 RuntimeError。</dd>
+    <dt>修复</dt><dd>把 HTTP 错误与解析错误都翻译成人话,接口返回 503。</dd>
+    <dt>验证</dt><dd>代码审查 + 6 种上游异常形态的进程内复现</dd>
+    <dt>涉及</dt><dd class="files"><code>englishtool/define.py</code><code>englishtool/app.py</code></dd>
+  </dl>
+</article>
+<article class="defect sev-minor" id="D-13">
+  <header>
+    <span class="did">D-13</span>
+    <span class="sev">一般</span>
+    <span class="darea">健壮性</span>
+  </header>
+  <h4>客户端传错 JSON 类型会变成 500,以及换源过程中的假&quot;加载失败&quot;</h4>
+  <dl>
+    <dt>表现</dt><dd>{&quot;url&quot;:123} / {&quot;lemma&quot;:[]} 这类明显的客户端错误返回 500;清空音频源时状态栏会闪一句&quot;音频加载失败&quot;。</dd>
+    <dt>根因</dt><dd>处理函数直接对非字符串调 .strip();error 监听不区分&quot;真的加载失败&quot;与&quot;清空 src 时浏览器必发的补发事件&quot;。</dd>
+    <dt>修复</dt><dd>入参统一走类型校验(4xx);error 事件在无源/换源场景下忽略。</dd>
+    <dt>验证</dt><dd>后端回归(400/422)+ E9 回归</dd>
+    <dt>涉及</dt><dd class="files"><code>englishtool/app.py</code><code>web/index.html</code></dd>
+  </dl>
+</article>
+<article class="defect sev-nit" id="D-14">
+  <header>
+    <span class="did">D-14</span>
+    <span class="sev">细节</span>
+    <span class="darea">存储</span>
+  </header>
+  <h4>句子/段落的替换不是原子的(DELETE 先提交)</h4>
+  <dl>
+    <dt>表现</dt><dd>目前调用点只在空表时执行,没暴露出来;但传入生成器时中途抛错会留下&quot;删了旧的、没写新的&quot;的空集。</dd>
+    <dt>根因</dt><dd>isolation_level=None + 分两条语句执行,且没有显式事务。</dd>
+    <dt>修复</dt><dd>先物化数据,再放进 BEGIN IMMEDIATE 事务里整体替换。</dd>
+    <dt>验证</dt><dd>代码审查(未做成自动化用例)</dd>
+    <dt>涉及</dt><dd class="files"><code>englishtool/db.py</code></dd>
+  </dl>
+</article>
+</section>
+
+<section>
+  <h2><span class="num">03 / 用例矩阵</span>56 条场景,逐条演一遍</h2>
+  <p>「怎么演的」是用例里真实执行的动作序列。耗时是这条用例占用的墙上时间(含等待音频播完的真实时间)。</p>
+  <div class="areahd"><h3>A 列表页</h3><span class="cnt">5/5 通过</span></div><table><thead><tr><th>编号</th><th>场景</th><th>怎么演的</th><th>耗时</th><th>结果</th></tr></thead><tbody><tr class="case ok">
+      <td class="cid"><span class="dot"></span>A1</td>
+      <td class="ctitle">首页列表渲染出所有单集, 元信息与状态徽章完整</td>
+      <td class="crepro">打开 /, 检查每条列表项</td>
+      <td class="cms">151ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>A2</td>
+      <td class="ctitle">超长标题不撑破布局(无横向溢出)</td>
+      <td class="crepro">打开首页, 观察第二集超长标题</td>
+      <td class="cms">151ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>A3</td>
+      <td class="ctitle">空输入点「导入」: 不发请求、不报错</td>
+      <td class="crepro">清空输入框 → 点导入</td>
+      <td class="cms">853ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>A4</td>
+      <td class="ctitle">非法链接导入: 明确失败提示(不装成功)</td>
+      <td class="crepro">输入 not-a-url → 点导入</td>
+      <td class="cms">854ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>A5</td>
+      <td class="ctitle">输入框按 Enter 等价于点「导入」</td>
+      <td class="crepro">聚焦输入框 → 输入非法 URL → 回车</td>
+      <td class="cms">255ms</td>
+      <td class="cres">通过</td>
+    </tr></tbody></table><div class="areahd"><h3>B 阅读页</h3><span class="cnt">8/8 通过</span></div><table><thead><tr><th>编号</th><th>场景</th><th>怎么演的</th><th>耗时</th><th>结果</th></tr></thead><tbody><tr class="case ok">
+      <td class="cid"><span class="dot"></span>B1</td>
+      <td class="ctitle">点列表项进入正文: URL 带 hash, 段落/句子/词全部渲染</td>
+      <td class="crepro">在列表点第一条单集</td>
+      <td class="cms">275ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>B2</td>
+      <td class="ctitle">正文文本与后端 segments 逐字一致(原文不可改写)</td>
+      <td class="crepro">对比 DOM 每句文本与 /episodes/{id} 的 segments</td>
+      <td class="cms">165ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>B3</td>
+      <td class="ctitle">点句子正文开始播这一句(真实指针)</td>
+      <td class="crepro">找到第 40 句 → 真实点击其文本 → 音频应从该句起点播放并高亮</td>
+      <td class="cms">835ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>B4</td>
+      <td class="ctitle">点单词弹释义卡, 且不影响播放进度</td>
+      <td class="crepro">点正文里的一个单词</td>
+      <td class="cms">1.1s</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>B5</td>
+      <td class="ctitle">工具栏控件齐全, 默认值符合设计(跟随滚动默认关)</td>
+      <td class="crepro">进入正文 → 检查工具栏</td>
+      <td class="cms">160ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>B6</td>
+      <td class="ctitle">正文里没有标签/事件属性泄漏(转义正确, 无 XSS)</td>
+      <td class="crepro">扫描 article.innerHTML</td>
+      <td class="cms">161ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>B7</td>
+      <td class="ctitle">返回列表: 正文隐藏但音频继续播(常驻播放器)</td>
+      <td class="crepro">播放中 → 点「← 列表」</td>
+      <td class="cms">819ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>B8</td>
+      <td class="ctitle">从列表再进同一集: 高亮与播放状态同步恢复</td>
+      <td class="crepro">列表页(音频仍在播) → 点回该集</td>
+      <td class="cms">914ms</td>
+      <td class="cres">通过</td>
+    </tr></tbody></table><div class="areahd"><h3>C 释义卡</h3><span class="cnt">4/4 通过</span></div><table><thead><tr><th>编号</th><th>场景</th><th>怎么演的</th><th>耗时</th><th>结果</th></tr></thead><tbody><tr class="case ok">
+      <td class="cid"><span class="dot"></span>C1</td>
+      <td class="ctitle">释义卡字段完整(语境义/词性/音标/词根), 无报错文本</td>
+      <td class="crepro">点一个未查过的词 → 等接口返回</td>
+      <td class="cms">1.3s</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>C2</td>
+      <td class="ctitle">标记生词: 卡片关闭、状态栏确认、全文同词高亮</td>
+      <td class="crepro">打开释义卡 → 点「标记为生词」</td>
+      <td class="cms">1.2s</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>C3</td>
+      <td class="ctitle">已标记的词: 按钮显示「已在生词本」且禁用</td>
+      <td class="crepro">再次点同一个词</td>
+      <td class="cms">765ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>C5</td>
+      <td class="ctitle">关闭释义卡后不残留遮罩(页面可继续点击)</td>
+      <td class="crepro">打开卡片 → 点关闭 → 检查中心点命中</td>
+      <td class="cms">1.1s</td>
+      <td class="cres">通过</td>
+    </tr></tbody></table><div class="areahd"><h3>D 逐句播放</h3><span class="cnt">5/5 通过</span></div><table><thead><tr><th>编号</th><th>场景</th><th>怎么演的</th><th>耗时</th><th>结果</th></tr></thead><tbody><tr class="case ok">
+      <td class="cid"><span class="dot"></span>D1</td>
+      <td class="ctitle">不勾连播: 播完当前句停在句首等查词, 高亮不跳</td>
+      <td class="crepro">关连播 → 点第 2 句 → 等这句播完</td>
+      <td class="cms">7.2s</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>D2</td>
+      <td class="ctitle">↻ 重听: 从当前句起点重新播</td>
+      <td class="crepro">播完停在句首 → 点 ↻ 重听</td>
+      <td class="cms">7.1s</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>D3</td>
+      <td class="ctitle">勾连播: 自动推进到下一句, 且自动打开跟随滚动</td>
+      <td class="crepro">勾连播 → 从第 50 句播, 等它播完</td>
+      <td class="cms">7.4s</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>D4</td>
+      <td class="ctitle">快捷键: 空格重听 / ] 下一句 / [ 上一句</td>
+      <td class="crepro">焦点在页面 → 依次按空格, ], [</td>
+      <td class="cms">7.4s</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>D5</td>
+      <td class="ctitle">焦点在输入框时: 空格正常输入, 不劫持成重听</td>
+      <td class="crepro">回到列表 → 聚焦导入框 → 输入含空格文本</td>
+      <td class="cms">812ms</td>
+      <td class="cres">通过</td>
+    </tr></tbody></table><div class="areahd"><h3>E 播放器</h3><span class="cnt">9/9 通过</span></div><table><thead><tr><th>编号</th><th>场景</th><th>怎么演的</th><th>耗时</th><th>结果</th></tr></thead><tbody><tr class="case ok">
+      <td class="cid"><span class="dot"></span>E1</td>
+      <td class="ctitle">底部播放器: 标题/进度/句序齐全, 点条展开全屏</td>
+      <td class="crepro">播放中 → 点底部播放条</td>
+      <td class="cms">708ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>E2</td>
+      <td class="ctitle">全屏播放器元素齐全, ⌄ 能收起</td>
+      <td class="crepro">检查全屏播放器 → 点 ⌄</td>
+      <td class="cms">705ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>E3</td>
+      <td class="ctitle">全屏: ↺15 与 ↻30 真正改变播放头</td>
+      <td class="crepro">展开全屏 → 跳到 5 分钟 → ↻30 → ↺15</td>
+      <td class="cms">1.3s</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>E4</td>
+      <td class="ctitle">全屏: 语速循环切换, 标签与滑块、音频三者一致</td>
+      <td class="crepro">连续点 3 次语速</td>
+      <td class="cms">1.8s</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>E5</td>
+      <td class="ctitle">全屏: 按住拖进度条能连续跳转</td>
+      <td class="crepro">在进度条 60% 按下 → 拖到 30% → 松开</td>
+      <td class="cms">741ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>E6</td>
+      <td class="ctitle">全屏: 点进度条 80% 位置直接跳过去</td>
+      <td class="crepro">点进度条 80% 处</td>
+      <td class="cms">728ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>E7</td>
+      <td class="ctitle">全屏: 「读这一集」收起播放器并回到正文</td>
+      <td class="crepro">全屏播放器 → 点「读这一集」</td>
+      <td class="cms">1.4s</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>E8</td>
+      <td class="ctitle">换一集播放: 播放器切集, 底部标题跟随</td>
+      <td class="crepro">打开第二集 → 点播放</td>
+      <td class="cms">9.5s</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>E9</td>
+      <td class="ctitle">✕ 停止并收起: 音频停止、播放条消失</td>
+      <td class="crepro">点播放条上的 ✕</td>
+      <td class="cms">820ms</td>
+      <td class="cres">通过</td>
+    </tr></tbody></table><div class="areahd"><h3>G 中译</h3><span class="cnt">2/2 通过</span></div><table><thead><tr><th>编号</th><th>场景</th><th>怎么演的</th><th>耗时</th><th>结果</th></tr></thead><tbody><tr class="case ok">
+      <td class="cid"><span class="dot"></span>G1</td>
+      <td class="ctitle">中译开关: 显示中文且不改动英文正文</td>
+      <td class="crepro">勾「中译」→ 等就绪</td>
+      <td class="cms">561ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>G2</td>
+      <td class="ctitle">中译挂在正确的句子下且与接口一致</td>
+      <td class="crepro">对比 DOM 中译与 /episodes 的 translations</td>
+      <td class="cms">180ms</td>
+      <td class="cres">通过</td>
+    </tr></tbody></table><div class="areahd"><h3>I 路由</h3><span class="cnt">8/8 通过</span></div><table><thead><tr><th>编号</th><th>场景</th><th>怎么演的</th><th>耗时</th><th>结果</th></tr></thead><tbody><tr class="case ok">
+      <td class="cid"><span class="dot"></span>I2</td>
+      <td class="ctitle">访问不存在的 #&lt;id&gt;: 落回列表, 不白屏、不报错</td>
+      <td class="crepro">访问 /#deadbeef0000</td>
+      <td class="cms">2.7s</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>I3</td>
+      <td class="ctitle">后退/前进: 列表与正文正确切换, hash 同步</td>
+      <td class="crepro">进正文 → 返回列表 → history.back() → forward()</td>
+      <td class="cms">1.0s</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>I7</td>
+      <td class="ctitle">PWA: manifest 与 SVG 图标可访问且字段完整</td>
+      <td class="crepro">请求 /manifest.webmanifest 与 /icon.svg</td>
+      <td class="cms">155ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>I8</td>
+      <td class="ctitle">/health 暴露 worker 状态</td>
+      <td class="crepro">请求 /health</td>
+      <td class="cms">153ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>I1</td>
+      <td class="ctitle">冷启动直达 /#&lt;id&gt;: 整页首次加载就进入正文</td>
+      <td class="crepro">浏览器地址栏直接打开 /#&lt;mainId&gt;(宿主已做整页加载)</td>
+      <td class="cms">151ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>I4</td>
+      <td class="ctitle">断网: 只读内容走离线缓存, 写操作必须失败</td>
+      <td class="crepro">先缓存 /sync → 断网 → 刷新到正文 → 试写 /vocab</td>
+      <td class="cms">152ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>I5</td>
+      <td class="ctitle">音频缺失时给出人话提示(不是静默)</td>
+      <td class="crepro">打开音频路径坏掉的单集 → 点播放</td>
+      <td class="cms">707ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>I6</td>
+      <td class="ctitle">失败态单集: 显示原因与重试按钮, 不白屏</td>
+      <td class="crepro">打开 failed 的单集</td>
+      <td class="cms">153ms</td>
+      <td class="cres">通过</td>
+    </tr></tbody></table><div class="areahd"><h3>J 细节</h3><span class="cnt">5/5 通过</span></div><table><thead><tr><th>编号</th><th>场景</th><th>怎么演的</th><th>耗时</th><th>结果</th></tr></thead><tbody><tr class="case ok">
+      <td class="cid"><span class="dot"></span>J1</td>
+      <td class="ctitle">释义卡是模态框: Esc 可关, 打开时焦点不跑丢</td>
+      <td class="crepro">打开卡片 → 按 Esc</td>
+      <td class="cms">1.1s</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>J2</td>
+      <td class="ctitle">没有无文本、无 title 的裸按钮</td>
+      <td class="crepro">扫描所有 button</td>
+      <td class="cms">157ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>J3</td>
+      <td class="ctitle">对比度: 正文与次要文字达到 WCAG AA</td>
+      <td class="crepro">计算正文颜色与背景的对比度</td>
+      <td class="cms">151ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>J4</td>
+      <td class="ctitle">快速连点同一句 5 次: 不产生多个音频元素, 状态不错乱</td>
+      <td class="crepro">连续 5 次点同一句</td>
+      <td class="cms">2.2s</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>J5</td>
+      <td class="ctitle">整轮下来页面没有 console.error / 未捕获异常</td>
+      <td class="crepro">检查错误收集器</td>
+      <td class="cms">151ms</td>
+      <td class="cres">通过</td>
+    </tr></tbody></table><div class="areahd"><h3>H 移动端</h3><span class="cnt">4/4 通过</span></div><table><thead><tr><th>编号</th><th>场景</th><th>怎么演的</th><th>耗时</th><th>结果</th></tr></thead><tbody><tr class="case ok">
+      <td class="cid"><span class="dot"></span>H1</td>
+      <td class="ctitle">390×844: 列表页无横向溢出, 导入框与按钮可用</td>
+      <td class="crepro">视口 390×844 → 打开首页</td>
+      <td class="cms">154ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>H2</td>
+      <td class="ctitle">390×844 正文: 隐藏导入框, 工具栏不重叠不溢出</td>
+      <td class="crepro">手机视口进入正文 → 检查 header/toolbar</td>
+      <td class="cms">252ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>H3</td>
+      <td class="ctitle">390×844 全屏播放器: 元素都在视口内</td>
+      <td class="crepro">手机视口播放 → 展开全屏</td>
+      <td class="cms">8.9s</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>H4</td>
+      <td class="ctitle">390×844 释义卡: 不超出屏幕, 内容可滚动</td>
+      <td class="crepro">手机视口点词</td>
+      <td class="cms">1.5s</td>
+      <td class="cres">通过</td>
+    </tr></tbody></table><div class="areahd"><h3>K 鉴权</h3><span class="cnt">6/6 通过</span></div><table><thead><tr><th>编号</th><th>场景</th><th>怎么演的</th><th>耗时</th><th>结果</th></tr></thead><tbody><tr class="case ok">
+      <td class="cid"><span class="dot"></span>K1</td>
+      <td class="ctitle">带 token 打开首页: 页面外壳正常, 不是 401 JSON</td>
+      <td class="crepro">浏览器访问 http://127.0.0.1:8789/  (服务端设了 ET_TOKEN)</td>
+      <td class="cms">0ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>K2</td>
+      <td class="ctitle">列表与正文都能拿到数据(前端带上了 Authorization)</td>
+      <td class="crepro">点开第一集, 看正文是否渲染</td>
+      <td class="cms">121ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>K3</td>
+      <td class="ctitle">token 错误时给出人话提示, 而不是空白页</td>
+      <td class="crepro">清掉本地 token, 把 Authorization 换成错的, 再拉一次列表</td>
+      <td class="cms">2ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>K4</td>
+      <td class="ctitle">PWA 资源(manifest / 图标)在开了 token 之后仍然可访问</td>
+      <td class="crepro">检查 &lt;link rel=manifest&gt; 与图标请求</td>
+      <td class="cms">1ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>K5</td>
+      <td class="ctitle">页面里没有把 token 泄到 URL 上(地址栏保持干净)</td>
+      <td class="crepro">检查 location.search 与 history</td>
+      <td class="cms">0ms</td>
+      <td class="cres">通过</td>
+    </tr>
+<tr class="case ok">
+      <td class="cid"><span class="dot"></span>K6</td>
+      <td class="ctitle">刷新之后仍然可用(token 存在 localStorage, 不依赖 URL)</td>
+      <td class="crepro">整页刷新一次, 再用应用自己的 api() 拉一次列表</td>
+      <td class="cms">4ms</td>
+      <td class="cres">通过</td>
+    </tr></tbody></table>
+</section>
+
+<section>
+  <h2><span class="num">04 / 怎么复现</span>把这一轮原样再跑一遍</h2>
+  <p>测试代码在 <code>.qa/</code> 下,不依赖任何测试框架:驱动用 ego-browser 操作真实 Chromium,断言在被测页面里执行。</p>
+  <pre><span class="c"># 1) 造夹具:复制一份真实库 + 生成边角单集与 60 秒短音频(绝不碰 data/app.db)</span>
+.venv/bin/python .qa/mkfixture.py
+
+<span class="c"># 2) 起测试实例:独立数据库、不起后台 worker</span>
+ET_PORT=8788 ET_DB_PATH=.qa/test.db ET_NO_WORKER=1 \
+  .venv/bin/python -m uvicorn englishtool.app:app --host 127.0.0.1 --port 8788
+
+<span class="c"># 3) 跑全部场景(配置见 .qa/env.json: 页面标签 / 实例地址 / 跑哪些相)</span>
+ego-browser nodejs &lt; .qa/run.mjs
+
+<span class="c"># 4) 只跑某几条,边改边验</span>
+<span class="c">#    .qa/env.json -> {"only": "B3,B7,E5", "tag": "debug1"}</span>
+ego-browser nodejs &lt; .qa/run.mjs
+
+<span class="c"># 5) 鉴权实例(token 开着也要能用)</span>
+ET_PORT=8789 ET_TOKEN=qa-secret-token .venv/bin/python -m uvicorn englishtool.app:app --host 127.0.0.1 --port 8789
+<span class="c">#    .qa/env.json -> {"base": "http://127.0.0.1:8789", "suite": ".qa/authsuite.js", "phases": "auth"}</span>
+
+<span class="c"># 结果落在 .qa/out/run-&lt;tag&gt;.json</span></pre>
+  <h3>相(phase)的含义</h3>
+  <ul>
+    <li><code>main</code> — 桌面视口,从冷启动到播放器、释义、中译、持久化。
+      需要「刷新」的用例会自己抛 <code>RELOAD_MARKER</code>,宿主据此整页重载后接着跑下半段(跨刷新的行为只能这么测)。</li>
+    <li><code>mobile</code> — 390×844 视口,查横向溢出、工具栏重叠、全屏播放器是否都在屏内。</li>
+    <li><code>coldstart</code> — 地址栏直接 <code>/#&lt;id&gt;</code> 整页加载。</li>
+    <li><code>offline</code> — 把页面里的 fetch/XHR 全拒掉(页面外壳照常),验证离线缓存路径。</li>
+    <li><code>broken</code> / <code>failed</code> — 音频文件丢失、处理失败这两条边角状态。</li>
+    <li><code>auth</code> — 另起一个开了 <code>ET_TOKEN</code> 的实例,验证鉴权下的完整可用性。</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="num">05 / 这一轮没测到什么</span>说清楚边界</h2>
+  <ul>
+    <li><strong>导入 → 转录 → 分段的真实长跑</strong>:解析真实播客链接、下载 56MB 音频、Whisper 转录 6~10 分钟。
+    本轮只验证了它们的失败路径(非法链接、网络不通、worker 挂掉)与状态机的可恢复性。
+    发出去之前建议你自己粘一个链接跑一集完整流程。</li>
+    <li><strong>iOS / Safari 真机</strong>:PWA 的「添加到主屏幕」、底部安全区、iOS 的音频自动播放策略只在 Chromium 上验证过。
+    <code>manifest</code> 与 <code>icon.svg</code> 可访问性有用例覆盖,但真机全屏观感需要你自己看一眼。</li>
+    <li><strong>长时间播放的稳定性</strong>:用 60 秒短音频覆盖了逐句停、连播推进、进度条拖拽、位置记忆;
+    「连听一小时、切来切去、后台标签页」这种长跑没测。</li>
+    <li><strong>真机外放音质与断句观感</strong>:自动化只能验证播放头与高亮对齐、句边界是否按预期停下,
+    「听起来别扭不别扭」是人的判断。</li>
+    <li><strong>多设备/多标签同时使用</strong>:单一 token、无账号体系,并发写没有专门压测。</li>
+  </ul>
+  <h3>已知的、刻意保留的行为(不是缺陷)</h3>
+  <ul>
+    <li>返回列表时音频继续播 —— 这是常驻播放器的设计目的,D-02 修的是它因此暴露出来的空源问题。</li>
+    <li>跟随滚动默认关、连播默认关、语速默认 0.75× —— 设计取舍,已固化成断言,防止将来被无意改掉。</li>
+    <li>中文播客不在目标场景内(强制 <code>language=en</code>)。</li>
+  </ul>
+</section>
+
+<footer>
+  <span>EnglishTool 测评报告 · 2026-10-11 03:51</span>
+  <span>原始结果:<code>.qa/out/run-final5.json</code> · 缺陷表:<code>.qa/report/defects.json</code> · 用例:<code>.qa/suite.js</code></span>
+</footer>
+</div>
+</body>
+</html>

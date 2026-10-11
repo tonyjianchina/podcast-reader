@@ -1,0 +1,705 @@
+{
+  "base": "http://127.0.0.1:8788",
+  "tag": "r50",
+  "startedAt": "2026-10-10T19:36:58.854Z",
+  "durationMs": 84889,
+  "fixture": {
+    "mainId": "92eb5fce79f2",
+    "episodes": [
+      {
+        "id": "92eb5fce79f2",
+        "title": "OpenAI’s Head of ChatGPT: We’re entering a new era of AI (again) | Tibo Sottiaux - Lenny's Podcast: Product | Career | Growth | 小宇宙 - 听播客，上小宇宙",
+        "state": "ready",
+        "show_title": "OpenAI’s Head of ChatGPT: We’re entering a new era of AI (again) | Tibo Sottiaux - Lenny's Podcast: Product | Career | Growth | 小宇宙 - 听播客，上小宇宙",
+        "seg_count": 670
+      },
+      {
+        "id": "b25af4d0b634",
+        "title": "Anthropic’s Quest to Give A.I. Morals",
+        "state": "ready",
+        "show_title": "Hard Fork",
+        "seg_count": 535
+      },
+      {
+        "id": "failedep001",
+        "title": "【测试】处理失败的单集",
+        "state": "failed",
+        "show_title": "Hard Fork",
+        "seg_count": 0
+      }
+    ],
+    "failed": {
+      "id": "failedep001",
+      "title": "【测试】处理失败的单集"
+    },
+    "brokenAudio": {
+      "id": "badaudio0001",
+      "title": "【测试】音频文件已丢失的单集"
+    }
+  },
+  "env": {
+    "base": "http://127.0.0.1:8788",
+    "phases": [
+      "main",
+      "mobile",
+      "coldstart",
+      "offline",
+      "broken",
+      "failed"
+    ]
+  },
+  "results": [
+    {
+      "id": "A1",
+      "area": "A 列表页",
+      "title": "首页列表渲染出所有单集, 元信息与状态徽章完整",
+      "repro": [
+        "打开 /, 检查每条列表项"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 152,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "A2",
+      "area": "A 列表页",
+      "title": "超长标题不撑破布局(无横向溢出)",
+      "repro": [
+        "打开首页, 观察第二集超长标题"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 151,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "A3",
+      "area": "A 列表页",
+      "title": "空输入点「导入」: 不发请求、不报错",
+      "repro": [
+        "清空输入框 → 点导入"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 855,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "A4",
+      "area": "A 列表页",
+      "title": "非法链接导入: 明确失败提示(不装成功)",
+      "repro": [
+        "输入 not-a-url → 点导入"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 8368,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "A5",
+      "area": "A 列表页",
+      "title": "输入框按 Enter 等价于点「导入」",
+      "repro": [
+        "聚焦输入框 → 输入非法 URL → 回车"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 8396,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "B1",
+      "area": "B 阅读页",
+      "title": "点列表项进入正文: URL 带 hash, 段落/句子/词全部渲染",
+      "repro": [
+        "在列表点第一条单集"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 295,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "B2",
+      "area": "B 阅读页",
+      "title": "正文文本与后端 segments 逐字一致(原文不可改写)",
+      "repro": [
+        "对比 DOM 每句文本与 /episodes/{id} 的 segments"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 167,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "B3",
+      "area": "B 阅读页",
+      "title": "点句子正文开始播这一句(真实指针)",
+      "repro": [
+        "找到第 40 句 → 真实点击其文本 → 音频应从该句起点播放并高亮"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 725,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "B4",
+      "area": "B 阅读页",
+      "title": "点单词弹释义卡, 且不影响播放进度",
+      "repro": [
+        "点正文里的一个单词"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 1067,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "B5",
+      "area": "B 阅读页",
+      "title": "工具栏控件齐全, 默认值符合设计(跟随滚动默认关)",
+      "repro": [
+        "进入正文 → 检查工具栏"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 159,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "B6",
+      "area": "B 阅读页",
+      "title": "正文里没有标签/事件属性泄漏(转义正确, 无 XSS)",
+      "repro": [
+        "扫描 article.innerHTML"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 154,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "B7",
+      "area": "B 阅读页",
+      "title": "返回列表: 正文隐藏但音频继续播(常驻播放器)",
+      "repro": [
+        "播放中 → 点「← 列表」"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 811,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "B8",
+      "area": "B 阅读页",
+      "title": "从列表再进同一集: 高亮与播放状态同步恢复",
+      "repro": [
+        "列表页(音频仍在播) → 点回该集"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 910,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "C1",
+      "area": "C 释义卡",
+      "title": "释义卡字段完整(语境义/词性/音标/词根), 无报错文本",
+      "repro": [
+        "点一个未查过的词 → 等接口返回"
+      ],
+      "status": "fail",
+      "error": "卡片内容异常: 在这句话里的意思\n第一人称单数主格代词，指说话者本人；在播客中主持人用它讲述自己的观察和经历（如 'when I look at...'、'I find myself...'）。\n代词 /aɪ/ · 缓存命中\n这个词没有可靠的词根可拆, 靠语境记。\n其他常见义\n（大写 I）罗马数字 1 — 罗马数字一\n（口语中作名词）自我、自己 — 自我，如 'the I' 指自我意识\n关联词\nme — 第一人称单数宾格，与 I 同源，常在同一句中交替",
+      "ms": 1177,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "C2",
+      "area": "C 释义卡",
+      "title": "标记生词: 卡片关闭、状态栏确认、全文同词高亮",
+      "repro": [
+        "打开释义卡 → 点「标记为生词」"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 1248,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "C3",
+      "area": "C 释义卡",
+      "title": "已标记的词: 按钮显示「已在生词本」且禁用",
+      "repro": [
+        "再次点同一个词"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 769,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "C5",
+      "area": "C 释义卡",
+      "title": "关闭释义卡后不残留遮罩(页面可继续点击)",
+      "repro": [
+        "打开卡片 → 点关闭 → 检查中心点命中"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 1096,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "D1",
+      "area": "D 逐句播放",
+      "title": "不勾连播: 播完当前句停在句首等查词, 高亮不跳",
+      "repro": [
+        "关连播 → 点第 2 句 → 等这句播完"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 7183,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "D2",
+      "area": "D 逐句播放",
+      "title": "↻ 重听: 从当前句起点重新播",
+      "repro": [
+        "播完停在句首 → 点 ↻ 重听"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 7075,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "D3",
+      "area": "D 逐句播放",
+      "title": "勾连播: 自动推进到下一句, 且自动打开跟随滚动",
+      "repro": [
+        "勾连播 → 从第 50 句播, 等它播完"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 7343,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "D4",
+      "area": "D 逐句播放",
+      "title": "快捷键: 空格重听 / ] 下一句 / [ 上一句",
+      "repro": [
+        "焦点在页面 → 依次按空格, ], ["
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 7329,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "D5",
+      "area": "D 逐句播放",
+      "title": "焦点在输入框时: 空格正常输入, 不劫持成重听",
+      "repro": [
+        "回到列表 → 聚焦导入框 → 输入含空格文本"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 811,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "E1",
+      "area": "E 播放器",
+      "title": "底部播放器: 标题/进度/句序齐全, 点条展开全屏",
+      "repro": [
+        "播放中 → 点底部播放条"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 706,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "E2",
+      "area": "E 播放器",
+      "title": "全屏播放器元素齐全, ⌄ 能收起",
+      "repro": [
+        "检查全屏播放器 → 点 ⌄"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 709,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "E3",
+      "area": "E 播放器",
+      "title": "全屏: ↺15 与 ↻30 真正改变播放头",
+      "repro": [
+        "展开全屏 → 跳到 5 分钟 → ↻30 → ↺15"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 1310,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "E4",
+      "area": "E 播放器",
+      "title": "全屏: 语速循环切换, 标签与滑块、音频三者一致",
+      "repro": [
+        "连续点 3 次语速"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 1764,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "E5",
+      "area": "E 播放器",
+      "title": "全屏: 按住拖进度条能连续跳转",
+      "repro": [
+        "在进度条 60% 按下 → 拖到 30% → 松开"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 715,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "E6",
+      "area": "E 播放器",
+      "title": "全屏: 点进度条 80% 位置直接跳过去",
+      "repro": [
+        "点进度条 80% 处"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 728,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "E7",
+      "area": "E 播放器",
+      "title": "全屏: 「读这一集」收起播放器并回到正文",
+      "repro": [
+        "全屏播放器 → 点「读这一集」"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 1432,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "E8",
+      "area": "E 播放器",
+      "title": "换一集播放: 播放器切集, 底部标题跟随",
+      "repro": [
+        "打开第二集 → 点播放"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 1492,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "E9",
+      "area": "E 播放器",
+      "title": "✕ 停止并收起: 音频停止、播放条消失",
+      "repro": [
+        "点播放条上的 ✕"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 819,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "G1",
+      "area": "G 中译",
+      "title": "中译开关: 显示中文且不改动英文正文",
+      "repro": [
+        "勾「中译」→ 等就绪"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 562,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "G2",
+      "area": "G 中译",
+      "title": "中译挂在正确的句子下且与接口一致",
+      "repro": [
+        "对比 DOM 中译与 /episodes 的 translations"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 192,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "I2",
+      "area": "I 路由",
+      "title": "访问不存在的 #<id>: 落回列表, 不白屏、不报错",
+      "repro": [
+        "访问 /#deadbeef0000"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 2654,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "I3",
+      "area": "I 路由",
+      "title": "后退/前进: 列表与正文正确切换, hash 同步",
+      "repro": [
+        "进正文 → 返回列表 → history.back() → forward()"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 1063,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "I7",
+      "area": "I 路由",
+      "title": "PWA: manifest 与 SVG 图标可访问且字段完整",
+      "repro": [
+        "请求 /manifest.webmanifest 与 /icon.svg"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 280,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "I8",
+      "area": "I 路由",
+      "title": "/health 暴露 worker 状态",
+      "repro": [
+        "请求 /health"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 176,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "J1",
+      "area": "J 细节",
+      "title": "释义卡是模态框: Esc 可关, 打开时焦点不跑丢",
+      "repro": [
+        "打开卡片 → 按 Esc"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 1067,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "J2",
+      "area": "J 细节",
+      "title": "没有无文本、无 title 的裸按钮",
+      "repro": [
+        "扫描所有 button"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 157,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "J3",
+      "area": "J 细节",
+      "title": "对比度: 正文与次要文字达到 WCAG AA",
+      "repro": [
+        "计算正文颜色与背景的对比度"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 152,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "J4",
+      "area": "J 细节",
+      "title": "快速连点同一句 5 次: 不产生多个音频元素, 状态不错乱",
+      "repro": [
+        "连续 5 次点同一句"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 2168,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "J5",
+      "area": "J 细节",
+      "title": "整轮下来页面没有 console.error / 未捕获异常",
+      "repro": [
+        "检查错误收集器"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 151,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "H1",
+      "area": "H 移动端",
+      "title": "390×844: 列表页无横向溢出, 导入框与按钮可用",
+      "repro": [
+        "视口 390×844 → 打开首页"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 152,
+      "pageErrors": [],
+      "phase": "mobile"
+    },
+    {
+      "id": "H2",
+      "area": "H 移动端",
+      "title": "390×844 正文: 隐藏导入框, 工具栏不重叠不溢出",
+      "repro": [
+        "手机视口进入正文 → 检查 header/toolbar"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 254,
+      "pageErrors": [],
+      "phase": "mobile"
+    },
+    {
+      "id": "H3",
+      "area": "H 移动端",
+      "title": "390×844 全屏播放器: 元素都在视口内",
+      "repro": [
+        "手机视口播放 → 展开全屏"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 856,
+      "pageErrors": [],
+      "phase": "mobile"
+    },
+    {
+      "id": "H4",
+      "area": "H 移动端",
+      "title": "390×844 释义卡: 不超出屏幕, 内容可滚动",
+      "repro": [
+        "手机视口点词"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 1611,
+      "pageErrors": [],
+      "phase": "mobile"
+    },
+    {
+      "id": "I1",
+      "area": "I 路由",
+      "title": "冷启动直达 /#<id>: 整页首次加载就进入正文",
+      "repro": [
+        "浏览器地址栏直接打开 /#<mainId>(宿主已做整页加载)"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 152,
+      "pageErrors": [],
+      "phase": "coldstart"
+    },
+    {
+      "id": "I4",
+      "area": "I 路由",
+      "title": "断网: 只读内容走离线缓存, 写操作必须失败",
+      "repro": [
+        "先缓存 /sync → 断网 → 刷新到正文 → 试写 /vocab"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 154,
+      "pageErrors": [],
+      "phase": "offline"
+    },
+    {
+      "id": "I5",
+      "area": "I 路由",
+      "title": "音频缺失时给出人话提示(不是静默)",
+      "repro": [
+        "打开音频路径坏掉的单集 → 点播放"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 706,
+      "pageErrors": [],
+      "phase": "broken"
+    },
+    {
+      "id": "I6",
+      "area": "I 路由",
+      "title": "失败态单集: 显示原因与重试按钮, 不白屏",
+      "repro": [
+        "打开 failed 的单集"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 153,
+      "pageErrors": [],
+      "phase": "failed"
+    }
+  ],
+  "pageErrors": [],
+  "hostErrors": []
+}

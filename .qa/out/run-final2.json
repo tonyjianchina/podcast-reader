@@ -1,0 +1,89 @@
+{
+  "base": "http://127.0.0.1:8788",
+  "tag": "final2",
+  "startedAt": "2026-10-10T19:41:36.978Z",
+  "durationMs": 11997,
+  "fixture": {
+    "mainId": "92eb5fce79f2",
+    "episodes": [
+      {
+        "id": "92eb5fce79f2",
+        "title": "OpenAI’s Head of ChatGPT: We’re entering a new era of AI (again) | Tibo Sottiaux - Lenny's Podcast: Product | Career | Growth | 小宇宙 - 听播客，上小宇宙",
+        "state": "ready",
+        "show_title": "OpenAI’s Head of ChatGPT: We’re entering a new era of AI (again) | Tibo Sottiaux - Lenny's Podcast: Product | Career | Growth | 小宇宙 - 听播客，上小宇宙",
+        "seg_count": 670
+      },
+      {
+        "id": "b25af4d0b634",
+        "title": "Anthropic’s Quest to Give A.I. Morals",
+        "state": "ready",
+        "show_title": "Hard Fork",
+        "seg_count": 535
+      },
+      {
+        "id": "failedep001",
+        "title": "【测试】处理失败的单集",
+        "state": "failed",
+        "show_title": "Hard Fork",
+        "seg_count": 0
+      }
+    ],
+    "failed": {
+      "id": "failedep001",
+      "title": "【测试】处理失败的单集"
+    },
+    "brokenAudio": {
+      "id": "badaudio0001",
+      "title": "【测试】音频文件已丢失的单集"
+    }
+  },
+  "env": {
+    "base": "http://127.0.0.1:8788",
+    "phases": [
+      "main"
+    ]
+  },
+  "results": [
+    {
+      "id": "B3",
+      "area": "B 阅读页",
+      "title": "点句子正文开始播这一句(真实指针)",
+      "repro": [
+        "找到第 40 句 → 真实点击其文本 → 音频应从该句起点播放并高亮"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 710,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "B7",
+      "area": "B 阅读页",
+      "title": "返回列表: 正文隐藏但音频继续播(常驻播放器)",
+      "repro": [
+        "播放中 → 点「← 列表」"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 8962,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "B8",
+      "area": "B 阅读页",
+      "title": "从列表再进同一集: 高亮与播放状态同步恢复",
+      "repro": [
+        "列表页(音频仍在播) → 点回该集"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 915,
+      "pageErrors": [],
+      "phase": "main"
+    }
+  ],
+  "pageErrors": [],
+  "hostErrors": []
+}

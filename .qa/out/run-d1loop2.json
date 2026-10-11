@@ -1,0 +1,102 @@
+{
+  "base": "http://127.0.0.1:8788",
+  "tag": "d1loop2",
+  "startedAt": "2026-10-10T19:48:33.022Z",
+  "durationMs": 30531,
+  "fixture": {
+    "mainId": "92eb5fce79f2",
+    "episodes": [
+      {
+        "id": "92eb5fce79f2",
+        "title": "OpenAI’s Head of ChatGPT: We’re entering a new era of AI (again) | Tibo Sottiaux - Lenny's Podcast: Product | Career | Growth | 小宇宙 - 听播客，上小宇宙",
+        "state": "ready",
+        "show_title": "OpenAI’s Head of ChatGPT: We’re entering a new era of AI (again) | Tibo Sottiaux - Lenny's Podcast: Product | Career | Growth | 小宇宙 - 听播客，上小宇宙",
+        "seg_count": 670
+      },
+      {
+        "id": "b25af4d0b634",
+        "title": "Anthropic’s Quest to Give A.I. Morals",
+        "state": "ready",
+        "show_title": "Hard Fork",
+        "seg_count": 535
+      },
+      {
+        "id": "failedep001",
+        "title": "【测试】处理失败的单集",
+        "state": "failed",
+        "show_title": "Hard Fork",
+        "seg_count": 0
+      }
+    ],
+    "failed": {
+      "id": "failedep001",
+      "title": "【测试】处理失败的单集"
+    },
+    "brokenAudio": {
+      "id": "badaudio0001",
+      "title": "【测试】音频文件已丢失的单集"
+    }
+  },
+  "env": {
+    "base": "http://127.0.0.1:8788",
+    "phases": [
+      "main"
+    ]
+  },
+  "results": [
+    {
+      "id": "D1",
+      "area": "D 逐句播放",
+      "title": "不勾连播: 播完当前句停在句首等查词, 高亮不跳",
+      "repro": [
+        "关连播 → 点第 2 句 → 等这句播完"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 7234,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "D2",
+      "area": "D 逐句播放",
+      "title": "↻ 重听: 从当前句起点重新播",
+      "repro": [
+        "播完停在句首 → 点 ↻ 重听"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 7129,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "D3",
+      "area": "D 逐句播放",
+      "title": "勾连播: 自动推进到下一句, 且自动打开跟随滚动",
+      "repro": [
+        "勾连播 → 从第 50 句播, 等它播完"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 7371,
+      "pageErrors": [],
+      "phase": "main"
+    },
+    {
+      "id": "D4",
+      "area": "D 逐句播放",
+      "title": "快捷键: 空格重听 / ] 下一句 / [ 上一句",
+      "repro": [
+        "焦点在页面 → 依次按空格, ], ["
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 7380,
+      "pageErrors": [],
+      "phase": "main"
+    }
+  ],
+  "pageErrors": [],
+  "hostErrors": []
+}

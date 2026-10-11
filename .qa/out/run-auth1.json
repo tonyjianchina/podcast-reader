@@ -1,0 +1,128 @@
+{
+  "base": "http://127.0.0.1:8789",
+  "tag": "auth1",
+  "startedAt": "2026-10-10T19:39:41.962Z",
+  "durationMs": 400,
+  "fixture": {
+    "mainId": "92eb5fce79f2",
+    "episodes": [
+      {
+        "id": "92eb5fce79f2",
+        "title": "OpenAI’s Head of ChatGPT: We’re entering a new era of AI (again) | Tibo Sottiaux - Lenny's Podcast: Product | Career | Growth | 小宇宙 - 听播客，上小宇宙",
+        "state": "ready",
+        "show_title": "OpenAI’s Head of ChatGPT: We’re entering a new era of AI (again) | Tibo Sottiaux - Lenny's Podcast: Product | Career | Growth | 小宇宙 - 听播客，上小宇宙",
+        "seg_count": 670
+      },
+      {
+        "id": "b25af4d0b634",
+        "title": "Anthropic’s Quest to Give A.I. Morals",
+        "state": "ready",
+        "show_title": "Hard Fork",
+        "seg_count": 535
+      },
+      {
+        "id": "failedep001",
+        "title": "【测试】处理失败的单集",
+        "state": "failed",
+        "show_title": "Hard Fork",
+        "seg_count": 0
+      }
+    ],
+    "failed": {
+      "id": "failedep001",
+      "title": "【测试】处理失败的单集"
+    },
+    "brokenAudio": {
+      "id": "badaudio0001",
+      "title": "【测试】音频文件已丢失的单集"
+    }
+  },
+  "env": {
+    "base": "http://127.0.0.1:8789",
+    "phases": [
+      "auth"
+    ]
+  },
+  "results": [
+    {
+      "id": "K1",
+      "area": "K 鉴权",
+      "title": "带 token 打开首页: 页面外壳正常, 不是 401 JSON",
+      "repro": [
+        "浏览器访问 http://127.0.0.1:8789/  (服务端设了 ET_TOKEN)"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 0,
+      "pageErrors": [],
+      "phase": "auth"
+    },
+    {
+      "id": "K2",
+      "area": "K 鉴权",
+      "title": "列表与正文都能拿到数据(前端带上了 Authorization)",
+      "repro": [
+        "点开第一集, 看正文是否渲染"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 121,
+      "pageErrors": [],
+      "phase": "auth"
+    },
+    {
+      "id": "K3",
+      "area": "K 鉴权",
+      "title": "token 错误时给出人话提示, 而不是空白页",
+      "repro": [
+        "清掉本地 token, 把 Authorization 换成错的, 再拉一次列表"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 2,
+      "pageErrors": [],
+      "phase": "auth"
+    },
+    {
+      "id": "K4",
+      "area": "K 鉴权",
+      "title": "PWA 资源(manifest / 图标)在开了 token 之后仍然可访问",
+      "repro": [
+        "检查 <link rel=manifest> 与图标请求"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 1,
+      "pageErrors": [],
+      "phase": "auth"
+    },
+    {
+      "id": "K5",
+      "area": "K 鉴权",
+      "title": "页面里没有把 token 泄到 URL 上(地址栏保持干净)",
+      "repro": [
+        "检查 location.search 与 history"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 0,
+      "pageErrors": [],
+      "phase": "auth"
+    },
+    {
+      "id": "K6",
+      "area": "K 鉴权",
+      "title": "刷新之后仍然可用(token 存在 localStorage, 不依赖 URL)",
+      "repro": [
+        "整页刷新一次, 再用应用自己的 api() 拉一次列表"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 4,
+      "pageErrors": [],
+      "phase": "auth"
+    }
+  ],
+  "pageErrors": [],
+  "hostErrors": []
+}

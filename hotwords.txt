@@ -1,0 +1,128 @@
+# Whisper 热词表
+#
+# 这里每一行都会被拼进 Whisper 的 initial_prompt, 用来纠正专有名词的拼写。
+# 实测: Hard Fork 那集把嘉宾名 Krishna 听成了 "Crisola" 和 "Chris Ola"。
+# 每发现一个错拼就往这里加一行 —— 这是投入产出比最高的准确率改进。
+#
+# 规则:
+# - 一行一个词或短语, 不要加引号
+# - 不要写整句话(会和真实语音抢上下文)
+# - # 开头是注释
+
+# —— 公司 ——
+Anthropic
+OpenAI
+Nvidia
+TSMC
+AMD
+Intel
+Qualcomm
+Broadcom
+Arm
+ASML
+Samsung
+Microsoft
+Google
+Meta
+Amazon
+Apple
+Tesla
+SpaceX
+Palantir
+Oracle
+Salesforce
+Snowflake
+Databricks
+Stripe
+ByteDance
+Alibaba
+Tencent
+
+# —— 投资机构 ——
+Sequoia
+Andreessen Horowitz
+a16z
+Y Combinator
+SoftBank
+Benchmark
+Khosla Ventures
+Founders Fund
+
+# —— 人物 ——
+Jensen Huang
+Sam Altman
+Satya Nadella
+Elon Musk
+Tim Cook
+Mark Zuckerberg
+Sundar Pichai
+Demis Hassabis
+Dario Amodei
+Daniela Amodei
+Krishna
+Jerome Powell
+Warren Buffett
+
+# —— 技术与概念 ——
+AGI
+LLM
+GPU
+TPU
+CUDA
+transformer
+foundation model
+inference
+fine-tuning
+semiconductor
+lithography
+hyperscaler
+datacenter
+open source
+open weights
+model weights
+alignment
+RLHF
+
+# —— AI 圈人名/圈子黑话(实测错拼重灾区) ——
+Effective Altruism
+TESCREAL
+Timnit Gebru
+Eliezer Yudkowsky
+e/acc
+rationalist
+LessWrong
+AI safety
+AI consciousness
+moral consideration
+papal encyclical
+Vatican
+
+# —— 财经 ——
+Fed
+Federal Reserve
+Treasury
+SEC
+IPO
+GDP
+CPI
+PCE
+earnings
+revenue
+guidance
+valuation
+buyback
+dividend
+yield
+basis points
+gross margin
+free cash flow
+
+# —— 媒体 ——
+Hard Fork
+Acquired
+Bloomberg
+Reuters
+Wall Street Journal
+Financial Times
+The Economist
+Stratechery

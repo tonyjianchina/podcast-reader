@@ -1,0 +1,63 @@
+{
+  "base": "http://127.0.0.1:8788",
+  "tag": "r49",
+  "startedAt": "2026-10-10T19:35:31.034Z",
+  "durationMs": 3125,
+  "fixture": {
+    "mainId": "92eb5fce79f2",
+    "episodes": [
+      {
+        "id": "92eb5fce79f2",
+        "title": "OpenAI’s Head of ChatGPT: We’re entering a new era of AI (again) | Tibo Sottiaux - Lenny's Podcast: Product | Career | Growth | 小宇宙 - 听播客，上小宇宙",
+        "state": "ready",
+        "show_title": "OpenAI’s Head of ChatGPT: We’re entering a new era of AI (again) | Tibo Sottiaux - Lenny's Podcast: Product | Career | Growth | 小宇宙 - 听播客，上小宇宙",
+        "seg_count": 670
+      },
+      {
+        "id": "b25af4d0b634",
+        "title": "Anthropic’s Quest to Give A.I. Morals",
+        "state": "ready",
+        "show_title": "Hard Fork",
+        "seg_count": 535
+      },
+      {
+        "id": "failedep001",
+        "title": "【测试】处理失败的单集",
+        "state": "failed",
+        "show_title": "Hard Fork",
+        "seg_count": 0
+      }
+    ],
+    "failed": {
+      "id": "failedep001",
+      "title": "【测试】处理失败的单集"
+    },
+    "brokenAudio": {
+      "id": "badaudio0001",
+      "title": "【测试】音频文件已丢失的单集"
+    }
+  },
+  "env": {
+    "base": "http://127.0.0.1:8788",
+    "phases": [
+      "offline"
+    ]
+  },
+  "results": [
+    {
+      "id": "I4",
+      "area": "I 路由",
+      "title": "断网: 只读内容走离线缓存, 写操作必须失败",
+      "repro": [
+        "先缓存 /sync → 断网 → 刷新到正文 → 试写 /vocab"
+      ],
+      "status": "pass",
+      "error": null,
+      "ms": 154,
+      "pageErrors": [],
+      "phase": "offline"
+    }
+  ],
+  "pageErrors": [],
+  "hostErrors": []
+}

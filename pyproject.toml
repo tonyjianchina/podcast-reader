@@ -1,0 +1,29 @@
+[project]
+name = "englishtool"
+version = "0.1.0"
+description = "把播客单集变成可精读、可标注、可查词的文章的私人阅读器"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.143.0",
+    "feedparser>=6.0.14",
+    "httpx>=0.28.1",
+    "mlx-whisper>=0.4.3",
+    "python-dotenv>=1.2.4",
+    "uvicorn[standard]>=0.54.0",
+    "yt-dlp>=2026.8.19",
+]
+
+[project.scripts]
+et = "englishtool.cli:main"
+
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+package = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["englishtool"]

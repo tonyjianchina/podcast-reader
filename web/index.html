@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EnglishTool</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EnglishTool">
+<meta name="theme-color" content="#faf9f7">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icon.svg">
+<style>
+  :root{
+    --bg:#faf9f7; --fg:#1a1a18; --dim:#8a8578; --line:#e5e1d8;
+    --accent:#b45309; --mark:#fde68a; --cur:#f5f0e3; --card:#fff;
+    --font-read:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#14140f; --fg:#e8e4da; --dim:#8a8578; --line:#2e2c25;
+           --accent:#f59e0b; --mark:#5a4a12; --cur:#24231a; --card:#1b1a14; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font-family:-apple-system,"Helvetica Neue","PingFang SC",sans-serif;}
+  header{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);
+         padding:10px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;z-index:10}
+  header h1{font-size:15px;margin:0 8px 0 0;font-weight:600;letter-spacing:.02em}
+  input,button,select{font:inherit;font-size:14px;padding:7px 11px;border-radius:8px;
+        border:1px solid var(--line);background:var(--card);color:var(--fg)}
+  button{cursor:pointer}
+  button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  #url{flex:1;min-width:260px}
+  .wrap{max-width:760px;margin:0 auto;padding:24px 20px 0}
+  .status{font-size:13px;color:var(--dim);margin-left:auto}
+  #ver{font-size:11px;color:var(--dim);opacity:.55;border:1px solid var(--line);border-radius:6px;padding:1px 5px}
+  ul.eps{list-style:none;padding:0;margin:0}
+  ul.eps li{background:var(--card);border:1px solid var(--line);border-radius:12px;
+            padding:13px 15px;margin-bottom:9px;cursor:pointer;display:flex;
+            gap:12px;align-items:center}
+  ul.eps li:hover{border-color:var(--accent)}
+  .t{font-weight:600;font-size:15px;line-height:1.45}
+  .m{font-size:12px;color:var(--dim);margin-top:3px}
+  .badge{font-size:11px;padding:2px 8px;border-radius:99px;border:1px solid var(--line);
+         color:var(--dim);white-space:nowrap}
+  .badge.ready{color:#15803d;border-color:#15803d55}
+  .badge.failed{color:#b91c1c;border-color:#b91c1c55}
+  article{font-family:var(--font-read);font-size:var(--fs,19px);line-height:1.8;
+          letter-spacing:.003em}
+  article p{margin:0 0 1.45em;text-indent:0}
+  article .s{cursor:pointer;border-radius:4px;padding:1px 0;transition:background .12s}
+  article .s:hover{background:var(--cur)}
+  article .s.cur{background:var(--cur);box-shadow:inset 3px 0 0 var(--accent)}
+  article .w{cursor:pointer;border-radius:3px;padding:0 1px}
+  article .w:hover{background:var(--mark)}
+  article .w.marked{background:var(--mark);box-shadow:inset 0 -1px 0 var(--accent)}
+  /* 中译: 更小、更淡, 藏起来时完全不占位 */
+  article .zh{display:none;font-family:-apple-system,"PingFang SC",sans-serif;
+       font-size:.68em;line-height:1.6;color:var(--dim);margin-top:.1em}
+  /* ⚠️ 这一条是「显示中译」的总开关, 删掉它整个功能会静默失效 —— 实测踩过:
+     元素都在 DOM 里、文字也对, 但 computed display 一直是 none, 看起来就是没反应。
+     body 上的 show-zh 类由中译勾选框维护。 */
+  body.show-zh article .zh{display:block}
+  /* 显示中译时正文行距收紧一点: 英文 + 中译两行叠起来本来就变高了 */
+  body.show-zh article{line-height:1.7}
+  body.show-zh article .s{display:inline}
+  body.show-zh article .s:not(:last-child){margin-right:.15em}
+  h2.ep{font-family:-apple-system,sans-serif;font-size:19px;line-height:1.4;margin:0 0 4px}
+  .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 22px;
+           font-family:-apple-system,sans-serif;font-size:13px;color:var(--dim)}
+  .toolbar .grow{flex:1}
+  #rateCtl{display:flex;align-items:center;gap:6px}
+  #rateNow{white-space:nowrap}
+  /* 手机: 工具栏分两层, 字号/语速只留滑块以外的形态; 只在「阅读模式」下把导入框藏起来。
+     注意: 不要在这里无条件 display:none 掉 #url —— 那等于手机上永远没有导入框,
+     你根本没法粘贴链接。实测踩过。 */
+  @media (max-width: 620px){
+    header{padding:8px 10px;gap:8px}
+    header h1{font-size:14px;margin-right:2px}
+    /* 列表页: 输入框占满一行, 导入按钮跟上 */
+    header input#url{flex:1 1 100%;order:3}
+    body.reading header input#url{display:none}
+    body.reading header button#go{display:none}
+    .wrap{padding:14px 14px 0}
+    .toolbar{display:grid;grid-template-columns:auto auto auto 1fr;gap:10px 8px;
+             align-items:center;font-size:13px;margin-bottom:14px}
+    .toolbar .grow{display:none}
+    #rateCtl input{display:none}
+    #fsCtl input{display:none}
+    #epMeta{grid-column:1 / -1;font-size:12px}
+    article{--fs:17px}
+  }
+  dialog{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--fg);
+         max-width:440px;width:92vw;padding:20px;font-size:14px;line-height:1.6}
+  dialog::backdrop{background:#0007}
+  dialog h3{margin:0 0 10px;font-size:17px;font-family:var(--font-read)}
+  dialog .field{margin:9px 0}
+  dialog .label{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--dim)}
+  dialog .val{margin-top:2px}
+  dialog .ipa{font-family:var(--font-read);font-size:16px}
+  dialog .roots{background:var(--cur);border-radius:8px;padding:9px 11px;margin:7px 0}
+  dialog ul{margin:5px 0;padding-left:19px}
+  dialog menu{display:flex;gap:8px;justify-content:flex-end;margin:16px 0 0;padding:0}
+  .empty{color:var(--dim);text-align:center;padding:60px 20px;font-size:14px}
+  /* 底部留白: 没有它, 最后几句永远无法滚到视口中间, 自动滚动会退化成"滚到底" */
+  .wrap{padding-bottom:55vh}
+  .hint{font-size:12px;color:var(--dim);margin-top:8px}
+  a{color:var(--accent)}
+
+  /* 定位按钮: 跟随中时是实心, 取消跟随后变描边, 一眼能看出状态 */
+  #locateBtn.following{background:var(--accent);border-color:var(--accent);color:#fff}
+  #locateBtn .ic{font-size:14px}
+  /* 取消跟随后提示你去点它 */
+  #locateBtn.attention{border-color:var(--accent);color:var(--accent)}
+  /* 阅读位置标记: 比播放高亮更淡, 只是为了让你点「定位」时知道会回到哪 */
+  article .s.cursor{box-shadow:inset 3px 0 0 var(--line)}
+
+  /* ===== 句子动作表 =====
+     手机上句子由几十个可点单词组成, 手指点下去几乎必然命中某个词,
+     想播放却弹出释义卡。所以触摸设备上点句子不直接动作, 而是弹这张表,
+     把「播放 / 查词」变成两个明确的大按钮 —— 点击目标不再互相嵌套。 */
+  #sheet{position:fixed;left:0;right:0;bottom:0;z-index:70;display:none;
+         background:var(--card);border-top:1px solid var(--line);
+         border-radius:18px 18px 0 0;box-shadow:0 -8px 30px #00000022;
+         padding:16px 18px calc(18px + env(safe-area-inset-bottom));
+         transform:translateY(100%);transition:transform .18s ease-out;
+         max-height:72vh;overflow:auto}
+  #sheet.on{display:block;transform:translateY(0)}
+  #sheetBack{position:fixed;inset:0;z-index:65;display:none;background:#0006}
+  #sheetBack.on{display:block}
+  #shText{font-family:var(--font-read);font-size:17px;line-height:1.6;margin:0 0 4px}
+  #shZh{font-size:12.5px;color:var(--dim);margin:0 0 14px}
+  #shWords{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 14px}
+  #shWords button{font-size:15px;padding:9px 13px;border-radius:9px;
+                  border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+  #shWords button.marked{background:var(--mark);border-color:var(--accent)}
+  #shActs{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  #shActs button{font-size:15px;padding:13px 10px;border-radius:11px;
+                 border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+  #shActs button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  #shGrab{width:38px;height:4px;border-radius:99px;background:var(--line);margin:0 auto 12px}
+
+  /* ===== 常驻底部播放器 =====
+     音频独立于「当前打开的哪一集」存在, 所以返回列表声音也不断。
+     参考播客客户端: 底部一条 mini bar, 点开是全屏播放器。 */
+  #bar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:none;
+       background:color-mix(in srgb, var(--card) 92%, transparent);
+       backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);
+       border-top:1px solid var(--line);cursor:pointer}
+  #bar.on{display:block}
+  #barFill{height:3px;background:var(--accent);width:0;transition:width .2s linear}
+  #barTrack{height:3px;background:var(--line);margin-top:-3px}
+  #barInner{display:flex;align-items:center;gap:11px;padding:9px 13px calc(9px + env(safe-area-inset-bottom))}
+  #barCover{width:38px;height:38px;border-radius:8px;flex:0 0 auto;background:var(--cur);
+            display:flex;align-items:center;justify-content:center;font-size:15px;overflow:hidden;cursor:pointer}
+  #barCover img{width:100%;height:100%;object-fit:cover;display:block}
+  #barText{flex:1;min-width:0}
+  #barTitle{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #barSub{font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+  #bar button{flex:0 0 auto;font-size:19px;line-height:1;padding:7px 10px;border-radius:50%;
+              border:1px solid var(--line);background:var(--card)}
+  /* 底部播放器不能盖住正文 */
+  body.hasPlayer .wrap{padding-bottom:96px}
+
+  /* ===== 全屏播放器 ===== */
+  #full{position:fixed;inset:0;z-index:60;display:none;flex-direction:column;
+        background:var(--bg);padding:14px 22px calc(22px + env(safe-area-inset-bottom))}
+  #full.on{display:flex}
+  #fullTop{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--dim)}
+  #fullTop button{font-size:20px;line-height:1;padding:6px 10px;border:none;background:none;color:var(--fg);cursor:pointer}
+  /* 封面是这块屏幕的主角。之前只给了 216px, 结果剩下 300 多像素全是死白。
+     现在用 min(76vw, 340px) 让它撑起来, 再用高度上限兜住小屏 + 大字号的情况。 */
+  #fullArt{width:min(76vw,340px);max-height:44vh;aspect-ratio:1;border-radius:20px;
+           margin:auto auto 0;   /* 上下都 auto: 富余空间在封面上下平分 */
+           flex:0 1 auto;background:var(--cur);display:flex;align-items:center;justify-content:center;
+           font-size:60px;box-shadow:0 12px 34px #00000022;overflow:hidden}
+  #fullArt img{width:100%;height:100%;object-fit:cover;display:block}
+  #fullTitle{font-family:var(--font-read);font-size:21px;line-height:1.34;margin:26px 0 7px;
+             max-height:4em;overflow:hidden;text-align:left}
+  #fullSub{font-size:13px;color:var(--dim)}
+  /* 这里原来是 margin-top:auto, 结果标题和进度条之间被撑出一大块空白 —— 手机上很难看。
+     改成紧跟信息区, 用一块弹性空白把控制区压到底部。 */
+  #fullSpacer{flex:1 1 auto;min-height:14px;max-height:110px}
+  #fullTimes{display:flex;justify-content:space-between;font-size:11.5px;color:var(--dim);
+             font-variant-numeric:tabular-nums}
+  #fullBar{height:5px;background:var(--line);border-radius:99px;margin-top:7px;position:relative;cursor:pointer}
+  #fullBarFill{height:5px;background:var(--accent);border-radius:99px;width:0}
+  #fullBarKnob{position:absolute;top:50%;width:14px;height:14px;border-radius:50%;background:var(--accent);
+               transform:translate(-50%,-50%);left:0}
+  #fullCtl{display:flex;align-items:center;justify-content:space-around;gap:4px;margin:20px 0 6px}
+  #fullCtl button{border:none;background:none;color:var(--fg);font-size:15px;cursor:pointer;
+                  display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 8px}
+  #fullCtl .big{font-size:30px}
+  #fullCtl .lbl{font-size:11px;color:var(--dim)}
+  
+  #fullNote{font-size:11.5px;color:var(--dim);text-align:center;margin-top:auto;padding-top:14px}
+</style>
+</head>
+<body>
+<header>
+  <h1>EnglishTool</h1>
+  <button id="back" style="display:none">← 列表</button>
+  <input id="url" placeholder="粘贴播客分享链接 / RSS 地址 / YouTube 链接">
+  <button class="primary" id="go">导入</button>
+  <span class="status" id="status">就绪</span>
+  <span id="ver" title="界面版本。改了 web/index.html 就把它加一, 用来确认浏览器加载的不是旧缓存">r12</span>
+</header>
+
+<div class="wrap">
+  <div id="list"><div class="empty">还没有内容。粘贴一个播客链接开始。</div></div>
+  <div id="reader" style="display:none">
+    <h2 class="ep" id="epTitle"></h2>
+    <div class="toolbar">
+      <span id="epMeta"></span>
+      <span style="flex:1"></span>
+      <label id="rateCtl" title="朗读速度">语速 <input type="range" id="rate" min="0.5" max="1.5" step="0.05" value="0.75"><b id="rateVal">0.75×</b></label>
+      <button id="rateReset" title="恢复 1.0 倍">1.0×</button>
+      <label id="fsCtl">字号 <input type="range" id="fs" min="15" max="26" value="19"></label>
+      <label title="当前句播完后是否继续下一句"><input type="checkbox" id="autonext"> 连播</label>
+      <label title="在每句英文下面显示中文翻译"><input type="checkbox" id="showZh"> 中译</label>
+      <button id="playBtn" title="播放 / 暂停">▶ 播放</button>
+      <button id="locateBtn" title="定位到正在读的那一句, 并重新跟随"><span class="ic">◎</span> 定位</button>
+      <button id="loopBtn" title="把当前句再放一遍">↻ 重听</button>
+    </div>
+    <article id="article"></article>
+  </div>
+</div>
+
+<dialog id="pop">
+  <h3 id="pWord"></h3>
+  <div id="pBody"></div>
+  <menu>
+    <button id="pMark">标记为生词</button>
+    <button id="pClose">关闭</button>
+  </menu>
+</dialog>
+
+<!-- 句子动作表(手机点句子用) -->
+<div id="sheetBack"></div>
+<div id="sheet">
+  <div id="shGrab"></div>
+  <p id="shText"></p>
+  <p id="shZh"></p>
+  <div id="shWords"></div>
+  <div id="shActs">
+    <button id="shPlay" class="primary">▶ 播放这一句</button>
+    <button id="shLoop">↻ 重听</button>
+  </div>
+</div>
+
+<!-- 常驻底部播放器 -->
+<div id="bar">
+  <div id="barFill"></div>
+  <div id="barTrack"></div>
+  <div id="barInner">
+    <div id="barCover">🎧</div>
+    <div id="barText">
+      <div id="barTitle">—</div>
+      <div id="barSub">—</div>
+    </div>
+    <button id="barPlay" title="播放 / 暂停">▶</button>
+    <button id="barClose" title="停止并收起">✕</button>
+  </div>
+</div>
+
+<!-- 全屏播放器 -->
+<div id="full">
+  <div id="fullTop">
+    <button id="fullDown" title="收起">⌄</button>
+    <span id="fullSubTop">正在播放</span>
+    <button id="fullToEp" style="margin-left:auto;font-size:13px" title="跳到这一集的正文">读这一集</button>
+  </div>
+  <div id="fullArt">🎧</div>
+  <div id="fullTitle">—</div>
+  <div id="fullSub">—</div>
+  <div id="fullSpacer"></div>
+  <div id="fullTimes"><span id="fullCur">0:00</span><span id="fullDur">0:00</span></div>
+  <div id="fullBar"><div id="fullBarFill"></div><div id="fullBarKnob"></div></div>
+  <div id="fullCtl">
+    <button id="fullBack15" title="回退 15 秒"><span class="big">↺</span><span class="lbl">15</span></button>
+    <button id="fullPlay" class="big" title="播放 / 暂停">▶</button>
+    <button id="fullFwd30" title="前进 30 秒"><span class="big">↻</span><span class="lbl">30</span></button>
+    <button id="fullRate" title="切换语速"><b id="fullRateVal">0.75×</b><span class="lbl">语速</span></button>
+  </div>
+  <div id="fullNote">点「读这一集」回到正文;点某一句会从那一句开始播</div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+// 离线缓存: 把最后一次 /sync 的结果留在本地。断网时正文、中译、已查过的词义都还能用。
+const OFFLINE_KEY = 'et.offline';
+function saveOffline(d){
+  try { localStorage.setItem(OFFLINE_KEY, JSON.stringify({ at: Date.now(), data: d })) } catch(e){}
+}
+function loadOffline(){
+  try { const raw = localStorage.getItem(OFFLINE_KEY); return raw ? JSON.parse(raw) : null } catch(e){ return null }
+}
+function offlineEpisode(id){
+  const c = loadOffline();
+  if(!c) return null;
+  return (c.data.episodes || []).find(e => e.episode.id === id) || null;
+}
+
+// 服务端 token。设了 ET_TOKEN 时, 后端会把 token 注入到这里的 __ET_TOKEN__;
+// 也支持 ?token=xxx 手输一次(存本地, 之后所有请求自动带上)。
+// 不设 token 时这里是空串, 一切照旧。
+const ET_TOKEN = (() => {
+  // 占位符本身要当成"服务端没注入 token"来处理。
+  // 之前判据写错, 导致没设 token 的部署里 ET_TOKEN 变成字面量 '__ET_TOKEN__',
+  // 于是每个请求都带上一个假 token, 从地址栏点进来的 ?token= 也永远不会被存下来。实测踩过。
+  const raw = '__ET_TOKEN__';
+  const injected = raw.indexOf('__ET_') === 0 ? '' : raw;
+  const fromUrl = new URLSearchParams(location.search).get('token');
+  if(fromUrl){
+    try{ localStorage.setItem('et.token', fromUrl) }catch(e){}
+    // 顺手把地址栏里的 token 抹掉, 免得被书签/截图带出去
+    try{ history.replaceState(null, '', location.pathname + location.hash) }catch(e){}
+    return fromUrl;
+  }
+  if(injected) return injected;
+  try{ return localStorage.getItem('et.token') || '' }catch(e){ return '' }
+})();
+function apiHeaders(extra){
+  const h = Object.assign({}, extra || {});
+  if(ET_TOKEN) h['Authorization'] = 'Bearer ' + ET_TOKEN;
+  return h;
+}
+
+const api = (p, o) => {
+  const opt = Object.assign({}, o || {});
+  opt.headers = apiHeaders(opt.headers);
+  return fetch(p, opt).then(async r => {
+    const t = await r.text();
+    let j; try { j = JSON.parse(t) } catch { j = {detail:t} }
+    if (!r.ok){
+      const err = new Error(j.detail || r.status);
+      err.status = r.status;
+      if(r.status === 401) err.message = '未授权: token 不对或没带(在地址后加 ?token=你的token)';
+      throw err;
+    }
+    return j;
+  }).catch(err => {
+    // 只读接口断网时尝试离线数据, 写操作必须失败(否则你会以为标记成功了)
+    const method = (o && o.method) || 'GET';
+    if(method !== 'GET') throw err;
+    const m = /^\/episodes\/([A-Za-z0-9]+)$/.exec(p);
+    if(m){
+      const ep = offlineEpisode(m[1]);
+      if(ep) return { ...ep, episode: ep.episode, offline: true };
+    }
+    if(p === '/episodes'){
+      const c = loadOffline();
+      if(c) return (c.data.episodes || []).map(e => e.episode);
+    }
+    if(p === '/vocab'){ const c = loadOffline(); if(c) return (c.data.vocab || []) }
+    throw err;
+  });
+};
+
+let current = null, segments = [], vocab = new Set(), curIdx = -1;
+let anchorIdx = -1;    // 当前"该停在哪"的那一句。用户拖进度条后它可能不等于 curIdx
+let finding = false;   // 正在定位播放头时, 暂时关掉跨句检测, 免得抢走音频控制
+
+// ===== 播放器状态 =====
+// 关键设计: 音频属于「playing.id」这一集, 而不是「current」(正在读的那一集)。
+// 两者分离之后, 从阅读页返回列表、甚至打开另一集, 声音都不会断。
+let audio = null;
+const playing = { id: null, title: '', show: '', art: '', duration: 0, pending: null, clips: [], primed: null, loaded: false };
+const segsCache = new Map();          // episode_id -> segments(播完的集不重复拉)
+let dragging = false;                  // 正在拖进度条时先别让 timeupdate 抢走滑块
+let tick = 0;                          // 定时器计数, 用来降频刷新界面
+let zhMap = new Map(), zhReady = false;
+// 中译开关默认关: 它的定位是「读不懂时垫底」, 而不是常驻的第二语言栏。
+let showZh = localStorage.getItem('et.showzh') === '1';
+
+// ---------- 列表 ----------
+async function loadList(){
+  const eps = await api('/episodes');
+  const el = $('#list');
+  if(!eps.length){ el.innerHTML = '<div class="empty">还没有内容。粘贴一个播客链接开始。</div>'; return; }
+  el.innerHTML = '<ul class="eps">' + eps.map(e => `
+    <li data-id="${e.id}">
+      <div style="flex:1">
+        <div class="t">${esc(e.title)}</div>
+        <div class="m">${esc(e.show_title||'')} ${e.published_at? '· '+esc(String(e.published_at).slice(0,10)):''}
+          ${e.state==='ready'? '· '+e.seg_count+' 句 / '+e.para_count+' 段':''}</div>
+      </div>
+      <span class="badge ${e.state}">${stateZh(e.state)}</span>
+    </li>`).join('') + '</ul>';
+  el.querySelectorAll('li').forEach(li => li.onclick = () => openEpisode(li.dataset.id, true));
+  const busy = eps.some(e => !['ready','failed'].includes(e.state));
+  if(busy) setTimeout(() => { if($('#reader').style.display==='none') loadList() }, 5000);
+}
+
+function stateZh(s){ return {pending:'排队',downloading:'下载中',transcribing:'转录中',
+  segmenting:'分段中',translating:'翻译中',ready:'可读',failed:'失败'}[s] || s }
+
+// ---------- 阅读 ----------
+async function openEpisode(id, push){
+  $('#status').textContent = '加载…';
+  let data;
+  try{
+    data = await api('/episodes/'+id);
+  }catch(err){
+    // 打不开一集(网络/token/数据没了)时要明说, 否则页面永远停在"加载…"
+    $('#status').textContent = '打不开这一集: ' + err.message;
+    $('#list').style.display='block'; $('#reader').style.display='none';
+    $('#back').style.display='none';
+    loadList();
+    return;
+  }
+  current = data.episode; segments = data.segments; vocab = new Set(data.vocab_lemmas);
+  zhMap = new Map((data.translations||[]).map(t => [t.seg_idx, t.text]));
+  zhReady = zhMap.size > 0;
+  $('#list').style.display='none'; $('#reader').style.display='block'; $('#back').style.display='';
+  $('#epTitle').textContent = current.title;
+  $('#epMeta').textContent = (current.show_title||'') +
+    (current.duration_sec? ' · '+Math.round(current.duration_sec/60)+' 分钟':'') +
+    ' · '+segments.length+' 句';
+  document.body.classList.add('reading');
+  closeSheet();
+  if(push) history.pushState({id}, '', '#'+id);
+
+  if(current.state !== 'ready'){
+    // 失败要给出原因和出路。以前只有 error 非空才显示重试按钮, 而下载/转录/分段这些
+    // 中间状态写库时 error 是 NULL —— 一旦卡在中间态, 界面就只剩一句"转录中…"永久轮询,
+    // 既没有重试也永远等不到结果(实测踩过)。
+    $('#article').innerHTML = `<div class="empty">${stateZh(current.state)}…${
+      current.error? '<br><br><code>'+esc(current.error)+'</code>':''}<br><br><button id="rt">重试</button></div>`;
+    const rt = $('#rt'); if(rt) rt.onclick = async () => {
+      try{ await api(`/episodes/${id}/retry`,{method:'POST'}); loadList(); openEpisode(id,false) }
+      catch(err){ $('#status').textContent = '重试失败: ' + err.message }
+    };
+    if(current.state==='failed') return;
+    setTimeout(() => { if(current && current.id===id) openEpisode(id,false) }, 4000);
+    return;
+  }
+
+  // 段落 -> 句子, 段落文本永远是 segments 的忠实拼接
+  const paras = data.paragraphs;
+  const html = paras.map(p => {
+    const inner = segments.slice(p.start_seg_idx, p.end_seg_idx+1).map(s => {
+      const zh = zhMap.get(s.idx);
+      const zhHtml = zh ? `<span class="zh">${esc(zh)}</span>` : '';
+      return `<span class="s" data-i="${s.idx}">${markWords(s.text, s.idx)}${zhHtml}</span>`;
+    }).join(' ');
+    return `<p>${inner}</p>`;
+  }).join('');
+  $('#article').innerHTML = html || '<div class="empty">没有文本</div>';
+  // 记下"屏幕上这一集到底是哪一集、渲染了多少句"。
+  // 页面外部(自动化测试/调试脚本)需要一个可靠的判据来判断正文是否真的换过来了:
+  // 只比较标题会被"标题先改、正文后到"的时序骗过去。
+  window.__etLoaded = { id, title: current.title || '', segs: segments.length, at: Date.now() };
+
+  // 手机上"点句子"和"点单词"的点击目标互相嵌套, 手指几乎必然命中某个词。
+  // 所以触摸设备统一走底部动作表: 点句子不动手, 先问你要干什么。
+  // 鼠标(有精确指针)保留原来的直接行为, 桌面端操作更快。
+  $('#article').querySelectorAll('.s').forEach(sp => {
+    sp.onclick = ev => {
+      const touch = ev.pointerType === 'touch' || matchMedia('(hover: none)').matches;
+      if(touch){ openSheet(+sp.dataset.i); return }
+      if(ev.target.classList.contains('w')) return;
+      playSeg(current.id, +sp.dataset.i);
+    };
+  });
+  $('#article').querySelectorAll('.w').forEach(w => {
+    w.onclick = ev => {
+      ev.stopPropagation();
+      const touch = ev.pointerType === 'touch' || matchMedia('(hover: none)').matches;
+      if(touch){ openSheet(+w.closest('.s').dataset.i); return }
+      openWord(w, +w.closest('.s').dataset.i);
+    };
+  });
+  syncZhToggle();
+  lastScrolledIdx = -1;      // 换了一集, 滚动记忆要清掉
+  userScrolledAt = 0;
+  window.scrollTo(0, 0);
+  // 这一集如果正在播, 正文里的标记要跟上
+  if(playing.id === id && audio){
+    const cs = clipsOf(id);
+    if(cs.length){
+      const here = cs.filter(c => c.start_sec <= audio.currentTime + 0.05).pop();
+      if(here){ anchorIdx = here.idx; setHighlight(here.idx) }
+    }
+  }
+  // 播放条不该等到"点了播放"才出现。播客软件里, 只要你跟这一集发生过关系,
+  // 它就一直在底部等着你接着听 —— 刷新页面也一样(实测反馈: 刷新后以为播放器没做出来)。
+  const saved = JSON.parse(localStorage.getItem('et.pos.' + id) || 'null');
+  const hasPlayer = playing.id === id;
+  if(!hasPlayer && saved){
+    playing.id = id;
+    playing.title = current.title || '';
+    playing.show = current.show_title || '';
+    playing.art = current.show_image || '';
+    playing.duration = current.duration_sec || 0;
+    playing.primed = saved.t || 0;      // 记着从哪接着听
+    document.body.classList.add('hasPlayer');
+    $('#bar').classList.add('on');
+    syncPlayerUI();
+  }
+  if(hasPlayer) playing.primed = null;
+  $('#status').textContent = hasPlayer
+    ? (audio && !audio.paused ? followStatus('播放中') : followStatus('已暂停'))
+    : (saved ? '上次听到 ' + fmtTime(saved.t) + '(点播放接着听)' : '可读');
+}
+
+// 中译开关。没有翻译时点开 -> 触发后台补生成, 完成后自动显示。
+function syncZhToggle(){
+  const box = $('#showZh');
+  document.body.classList.toggle('show-zh', showZh && zhReady);
+  if(!zhReady){ box.disabled = false; box.checked = false; return }
+  box.checked = showZh;
+}
+$('#showZh').onchange = async e => {
+  showZh = e.target.checked;
+  localStorage.setItem('et.showzh', showZh ? '1' : '0');
+
+  if(showZh && !zhReady && current){
+    $('#status').textContent = '正在生成中译…';
+    $('#showZh').checked = false;
+    try{
+      await api(`/episodes/${current.id}/translate`, {method:'POST'});
+      pollTranslations(current.id);
+    }catch(err){ $('#status').textContent = '翻译失败: '+err.message }
+    return;
+  }
+  document.body.classList.toggle('show-zh', showZh && zhReady);
+};
+function pollTranslations(id){
+  let tries = 0;
+  const t = setInterval(async () => {
+    tries++;
+    if(!current || current.id !== id || tries > 60){ clearInterval(t); return }
+    try{
+      const d = await api('/episodes/'+id);
+      if((d.translations||[]).length){
+        clearInterval(t);
+        zhMap = new Map(d.translations.map(x => [x.seg_idx, x.text]));
+        zhReady = true;
+        // 就地补上中译, 不重排已经渲染好的文章
+        $('#article').querySelectorAll('.s').forEach(sp => {
+          const zh = zhMap.get(+sp.dataset.i);
+          if(zh && !sp.querySelector('.zh')){
+            const el = document.createElement('span');
+            el.className = 'zh'; el.textContent = zh;
+            sp.appendChild(el);
+          }
+        });
+        showZh = true;
+        localStorage.setItem('et.showzh', '1');
+        syncZhToggle();
+        $('#status').textContent = '中译已就绪';
+      }
+    }catch{}
+  }, 3000);
+}
+
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])) }
+
+function markWords(text, segIdx){
+  return esc(text).replace(/[A-Za-z][A-Za-z'’\-]*/g, m => {
+    const key = m.toLowerCase();
+    const marked = vocab.has(key) ? ' marked' : '';
+    return `<span class="w${marked}" data-w="${esc(m)}">${m}</span>`;
+  });
+}
+
+// ---------- 播放 ----------
+// 语速默认 0.75 倍: 英文播客原速对本项目的用途(核听 + 精读)偏快, 慢放更容易跟上。
+// 设置存 localStorage, 不用每次重调。
+let rate = parseFloat(localStorage.getItem('et.rate') || '0.75');
+let autoNext = localStorage.getItem('et.autonext') === '1';
+// 跟随滚动默认关。这是「读为主」的必然结论:
+// 每句都滚一次 = 每分钟约 20 次平滑滚动, 页面永远在你脚下移动,
+// 你低头看一个词, 高亮句就被推出屏幕了(实测反馈: "自动划到底部, 标识也消失")。
+// 需要躺着连续听的时候再自己打开。
+// 跟随滚动**默认开**: 点开始阅读就该自动跟着读下去。
+// 你一旦自己滑屏超过阈值(见 maybeUnfollow), 它自动关掉, 不再和你抢屏幕。
+let autoScroll = localStorage.getItem('et.autoscroll') !== '0';
+
+function fmtRate(v){ return (Math.round(v*100)/100) + '×' }
+
+function applyRate(){
+  if(audio) audio.playbackRate = rate;
+  const lbl = fmtRate(rate);
+  $('#rate').value = rate; $('#rateVal').textContent = lbl;
+  const f = $('#fullRateVal'); if(f) f.textContent = lbl;
+}
+$('#rate').oninput = e => { rate = parseFloat(e.target.value);
+  localStorage.setItem('et.rate', String(rate)); applyRate(); };
+$('#rateReset').onclick = () => { rate = 1.0; localStorage.setItem('et.rate','1'); applyRate(); };
+$('#autonext').checked = autoNext;
+$('#autonext').onchange = e => {
+  autoNext = e.target.checked;
+  localStorage.setItem('et.autonext', autoNext ? '1' : '0');
+  // 连续听就必须跟着滚, 否则声音跑到你看不见的地方去了
+  if(autoNext && !autoScroll){
+    autoScroll = true;
+    localStorage.setItem('et.autoscroll', '1');
+    syncAutoScroll();
+    scrollToSeg(curIdx, true);
+  }
+};
+function syncAutoScroll(){
+  const b = $('#locateBtn');
+  if(b){ b.classList.toggle('following', autoScroll); b.title = autoScroll
+    ? '正在跟随播放位置(滑屏可取消)'
+    : '点一下回到你正在读的那一句, 并重新跟随' }
+}
+
+// 你当前"读到哪一句": 取视野上方三分之一处那一句。
+// 用它可以实现"滑到别处看完, 一键回到刚才的位置"(而不是永远回到正在播的那句)。
+function readingAnchorIdx(){
+  if(!segments.length) return curIdx;
+  const line = window.innerHeight * 0.33;
+  let best = null, bestTop = -Infinity;
+  for(const s of segments){
+    const el = $(`.s[data-i="${s.idx}"]`);
+    if(!el) continue;
+    const r = el.getBoundingClientRect();
+    if(r.top <= line && r.top > bestTop){ bestTop = r.top; best = s.idx }
+  }
+  return best === null ? curIdx : best;
+}
+
+function followStatus(prefix){
+  return autoScroll ? (prefix ? prefix + ' · 跟随中' : '跟随中') : (prefix || '');
+}
+/** 播放状态变了就刷新状态栏, 让"跟随中/已停止跟随"随时可见。 */
+function refreshStatusLine(){
+  if(!current || !playing.id || playing.id !== current.id) return;
+  if(playing.primed != null) return;
+  $('#status').textContent = (audio && !audio.paused) ? followStatus('播放中') : followStatus('已暂停');
+}
+function locateCurrent(){
+  const idx = curIdx >= 0 ? curIdx : readingAnchorIdx();
+  if(idx === null || idx < 0) return;
+  autoScroll = true;                      // 定位 = 重新开始跟随
+  localStorage.setItem('et.autoscroll', '1');
+  syncAutoScroll();
+  const b0 = $('#locateBtn'); if(b0) b0.classList.remove('attention');
+  lastScrolledIdx = -1;
+  scrollToSeg(idx, true, true);
+  setHighlightCursor(idx);
+  $('#status').textContent = (idx === curIdx) ? '已定位到正在读的句子' : '已定位到这一句';
+}
+
+/** 给"你读到哪"的那一句加一个细边框标记, 和播放高亮区分开。 */
+function setHighlightCursor(idx){
+  document.querySelectorAll('.s.cursor').forEach(e => e.classList.remove('cursor'));
+  const el = $(`.s[data-i="${idx}"]`);
+  if(el) el.classList.add('cursor');
+}
+
+$('#locateBtn').onclick = locateCurrent;
+$('#loopBtn').onclick = () => {
+  if(!current) return;
+  const idx = curIdx >= 0 ? curIdx : 0;
+  playSeg(current.id, idx);
+};
+$('#playBtn').onclick = async () => {
+  if(!current) return;
+  if(playing.id === current.id && playing.primed != null){
+    const at = playing.primed; playing.primed = null;
+    await startEpisode(current, at);
+    return;
+  }
+  // 播放器已经在放别的一集: 切到当前这一集继续
+  if(playing.id && playing.id !== current.id){ startEpisode(current); return }
+  if(!audio || !playing.id){ playSeg(current.id, curIdx >= 0 ? curIdx : 0); return }
+  if(audio.paused){
+    // 从当前句起点继续, 避免停在句子之间的静音间隙里
+    const here = segAt(audio.currentTime);
+    if(here) audio.currentTime = here.start_sec;
+    audio.play().catch(e => $('#status').textContent = '播放失败: '+e.message);
+  } else {
+    audio.pause();
+  }
+  syncPlayerUI();
+};
+
+// ==================== 底部常驻播放器 ====================
+$('#bar').onclick = (e) => { if(e.target.closest('button')) return; openFull() };
+$('#barPlay').onclick = async (e) => {
+  e.stopPropagation();
+  // 预置状态(只有记录、还没有播放器): 从上次的位置建播放器并开播
+  if(playing.primed != null){
+    const at = playing.primed; playing.primed = null;
+    const ep = (current && current.id === playing.id) ? current : { id: playing.id, title: playing.title, show_title: playing.show, show_image: playing.art, duration_sec: playing.duration };
+    await startEpisode(ep, at);
+    syncPlayerUI();
+    return;
+  }
+  togglePlay();
+};
+$('#barClose').onclick = (e) => { e.stopPropagation(); stopAndClose() };
+$('#fullDown').onclick = closeFull;
+$('#fullPlay').onclick = togglePlay;
+$('#fullBack15').onclick = () => skip(-15);
+$('#fullFwd30').onclick = () => skip(30);
+$('#fullRate').onclick = () => {
+  // 0.5 → 0.6 → 0.75 → 0.9 → 1.0 → 1.25 → 1.5 → 回到 0.5
+  const ladder = [0.5, 0.6, 0.75, 0.9, 1.0, 1.25, 1.5];
+  const i = ladder.findIndex(v => Math.abs(v - rate) < 0.001);
+  rate = ladder[(i + 1) % ladder.length];
+  localStorage.setItem('et.rate', String(rate));
+  applyRate();
+};
+$('#fullToEp').onclick = () => {
+  if(!playing.id) return;
+  closeFull();
+  if(current && current.id === playing.id){ window.scrollTo({top: 0, behavior: 'smooth'}); return }
+  location.hash = playing.id;
+  openEpisode(playing.id, false);
+};
+// 点进度条任意位置跳转(按住可以拖)
+function barSeek(clientX){
+  const r = $('#fullBar').getBoundingClientRect();
+  const p = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+  const dur = (audio && isFinite(audio.duration) && audio.duration > 0) ? audio.duration : playing.duration;
+  if(dur > 0) seekTo(p * dur);
+}
+$('#fullBar').addEventListener('pointerdown', (e) => {
+  dragging = true; barSeek(e.clientX);
+  $('#fullBar').setPointerCapture(e.pointerId);
+});
+$('#fullBar').addEventListener('pointermove', (e) => { if(dragging) barSeek(e.clientX) });
+$('#fullBar').addEventListener('pointerup', (e) => {
+  dragging = false;
+  try { $('#fullBar').releasePointerCapture(e.pointerId) } catch(_) {}
+});
+
+// 播放位置落在哪一句。不要假设 segments[idx] 就是第 idx 句:
+// Whisper 的片段起止时间会重叠, 数组下标和位置不是一回事。
+function lastSeg(){ return segments.length ? segments[segments.length-1] : null }
+
+function segAt(t){
+  let best = null;
+  for(const s of segments){ if(s.start_sec <= t + 0.05) best = s; else break }
+  // 越界时不要返回 null —— 那会让「正在读哪句」的标识凭空消失, 是实测踩过的坑。
+  // 超出最后一句起点之后, 就钉在最后一句上。
+  return best || segments[0] || null;
+}
+
+// 音频真正该结束的位置。
+// 取两者较大值: 转录时间轴可能超出音频(有 26 句实测如此), 那时靠 'ended' 事件收尾;
+// 反过来音频尾部可能还有一段没有转录的静音, 用 min() 会把它截掉。
+/** 是否真的播到了音频末尾。转录结束 ≠ 音频结束(尾部可能有未转录的广告)。 */
+function atRealEnd(){
+  const end = audioEndTime();
+  if(end === null) return false;
+  return audio.currentTime >= end - 0.5;
+}
+
+function audioEndTime(){
+  const last = lastSeg();
+  const bySeg = last ? last.end_sec + 2 : -Infinity;
+  const bySrc = (audio && isFinite(audio.duration) && audio.duration > 0) ? audio.duration : -Infinity;
+  const end = Math.max(bySeg, bySrc);
+  return isFinite(end) ? end : null;
+}
+
+// ---------- 自动滚动 ----------
+// 三个坑, 都是实测踩出来的:
+// 1) 早期版本直接调 scrollIntoView({behavior:'smooth'}), 而定时器每 100ms 跑一次;
+//    每 100ms 下达新指令会不断打断上一次动画, 看起来就是"页面自己往下滑"。
+// 2) block:'center' 在段落靠近文末时会被浏览器 clamp 到最大滚动位置, 判据失效。
+// 3) **最坑的一个**: 程序自己滚动会触发 scroll 事件, 早期版本据此认定"用户刚滚过",
+//    于是接下来 3 秒内所有跟随滚动都被自己压制。连播时每句约 3.3 秒, 等于永远落在
+//    压制窗口里 —— 表现就是"勾上连播, 滚一下就再也不跟了, 高亮跑出屏幕后看着像消失了"。
+//    修法: 我们自己发起的滚动期间产生的 scroll 事件标记为程序产生, 不算用户意图。
+let lastScrolledIdx = -1;
+let userScrolledAt = 0;
+let programmaticUntil = 0;   // 这个时间点之前收到的 scroll 事件是自己滚的
+let manualDuringUntil = 0;   // 手指/滚轮刚动过的窗口
+let outsidePx = 0;           // 当前句离"舒适区"有多远
+
+// 手指按下就记一笔。用它区分"你主动滑"和"程序自己滚":
+// 只有你真正触摸/滚轮之后产生的 scroll 才可能关闭跟随。
+window.addEventListener('touchstart', () => { manualDuringUntil = Date.now() + 900 }, { passive: true });
+window.addEventListener('wheel', () => { manualDuringUntil = Date.now() + 900; userScrolledAt = Date.now() }, { passive: true });
+document.addEventListener('touchmove', () => { manualDuringUntil = Date.now() + 900; userScrolledAt = Date.now() }, { passive: true });
+
+window.addEventListener('scroll', () => {
+  if(Date.now() < programmaticUntil) return;       // 确定是自己滚的
+  if(Date.now() > manualDuringUntil) return;       // 不是你的操作(惯性/布局变化等)
+  userScrolledAt = Date.now();
+  maybeUnfollow();
+}, { passive: true });
+
+/** 当前句被滑出多远(px)。在舒适区内为 0。 */
+function outsideDistance(){
+  if(curIdx < 0) return 0;
+  const el = $(`.s[data-i="${curIdx}"]`);
+  if(!el) return 0;
+  const r = el.getBoundingClientRect();
+  if(r.bottom < 0) return -r.bottom;                  // 滑过头了, 句子在上面
+  if(r.top > window.innerHeight) return r.top - window.innerHeight;
+  return 0;
+}
+const UNFOLLOW_PX = 110;   // 滑离当前句超过这么多, 就认为你要自己看
+
+function maybeUnfollow(){
+  if(!autoScroll) return;
+  outsidePx = outsideDistance();
+  if(outsidePx > UNFOLLOW_PX){
+    autoScroll = false;
+    localStorage.setItem('et.autoscroll', '0');
+    syncAutoScroll();
+    setHighlightCursor(readingAnchorIdx());
+    $('#status').textContent = '已停止跟随(点「定位」回到当前句)';
+    const b = $('#locateBtn'); if(b) b.classList.add('attention');
+  }
+}
+
+function scrollToSeg(i, force, instant){
+  if(i === undefined || i === null || i < 0) return;
+  if(!force && !autoScroll) return;                    // 跟随滚动没开就不动页面
+  if(i === lastScrolledIdx && !force) return;          // 同一句不重复滚
+  if(!force && Date.now() - userScrolledAt < 4000) return;  // 你刚手动滚过, 别抢
+  const el = $(`.s[data-i="${i}"]`);
+  if(!el) return;
+  const r = el.getBoundingClientRect();
+  // 只在"快看不见了"时才滚: 落在视口中间三分之一就不动。
+  // 每句都硬滚一次 = 页面永远在你脚下移动, 低头看个词高亮就跑掉了。
+  const lo = window.innerHeight * 0.34;
+  const hi = window.innerHeight * 0.66;
+  if(r.top >= lo && r.bottom <= hi){ lastScrolledIdx = i; return }
+  lastScrolledIdx = i;
+  programmaticUntil = Date.now() + 1600;   // 接下来这段时间的 scroll 事件是我滚的
+  // 定位这种明确动作要"瞬间到达": 距离可能几千像素, 平滑滚动要好几秒,
+  // 期间你会以为它没反应(实测踩过)。跟随播放时仍用平滑滚动, 观感更连贯。
+  el.scrollIntoView({ block:'center', behavior: instant ? 'auto' : 'smooth' });
+}
+// 明确保留的调试入口: 可在浏览器控制台里直接检验滚动逻辑, 不影响正常使用
+window.__etScrollTo = (i, force) => scrollToSeg(i, force);
+
+// ==================== 播放器核心 ====================
+// 音频独立于「正在读的那一集」。所有播放入口都走这里。
+
+function fmtTime(t){
+  if(!isFinite(t) || t < 0) t = 0;
+  const m = Math.floor(t / 60), sec = Math.floor(t % 60);
+  return m + ":" + String(sec).padStart(2, '0');
+}
+
+function ensureAudio(){
+  // 缓存的 audio 必须还在文档里。
+  // 如果它被移出过 DOM(比如页面被别的脚本操作过、或浏览器回收了节点), 继续用它就会出现
+  // "点句子没反应" —— 元素在内存里、时间也在走, 但它不在文档里, 查不到、也播不出声。
+  // 实测踩过: 页面看起来一切正常, 底部播放条还在报"播放中", 但声音永远不出来。
+  if(audio && audio.isConnected) return audio;
+  if(audio && !audio.isConnected){
+    try{ audio.pause() }catch(e){}
+    audio = null;
+    playing.loaded = false;
+  }
+  audio = document.createElement('audio');
+  audio.id = 'etAudio';
+  audio.preload = 'auto';
+  document.body.appendChild(audio);
+  audio.defaultPlaybackRate = rate;
+  audio.playbackRate = rate;
+
+  // 有些不守规矩的浏览器会重置倍速, 这里兜住
+  audio.addEventListener('ratechange', () => {
+    if(Math.abs(audio.playbackRate - rate) > 0.001) audio.playbackRate = rate;
+  });
+  audio.addEventListener('loadedmetadata', () => {
+    if(isFinite(audio.duration) && audio.duration > 0) playing.duration = audio.duration;
+    if(playing.pending !== null){ const p = playing.pending; playing.pending = null; seekTo(p) }
+    syncPlayerUI();
+  });
+  audio.addEventListener('timeupdate', () => { if(!dragging) syncPlayerUI() });
+  // 播放状态一变就刷新界面和状态栏。状态栏要能随时看出"跟随中/已停止跟随",
+  // 否则你滑屏取消跟随后没有任何反馈(实测踩过: refreshStatusLine 定义了却没接上)。
+  audio.addEventListener('play', () => { syncPlayerUI(); refreshStatusLine() });
+  audio.addEventListener('pause', () => { syncPlayerUI(); refreshStatusLine() });
+  audio.addEventListener('error', () => {
+    // 清空 src / 换源的过程中, 浏览器一定会补发一次 error(MEDIA_ERR_SRC_NOT_SUPPORTED)。
+    // 那不是真的加载失败, 报出来只会让人以为音频坏了(实测踩过: 停止播放后状态栏显示"加载失败")。
+    if(!audio.currentSrc && (!audio.getAttribute('src') || audio.error?.code === 4)) return;
+    $('#status').textContent = '音频加载失败, 检查这一集的音频是否还在 Mac 上';
+  });
+  // 源文件播完(转录时间轴有时会超出音频本身, 这时它会比"最后一句"更早触发)
+  audio.addEventListener('ended', () => {
+    const clips = clipsOf(playing.id);
+    if(clips.length) setHighlight(clips[clips.length - 1].idx);
+    $('#status').textContent = '已到结尾';
+    syncPlayerUI();
+  });
+  return audio;
+}
+
+function clipsOf(epId){
+  if(current && current.id === epId && segments.length) return segments;
+  return segsCache.get(epId) || [];
+}
+async function loadClips(epId){
+  if(current && current.id === epId && segments.length) return segments;
+  if(segsCache.has(epId)) return segsCache.get(epId);
+  const d = await api('/episodes/' + epId);
+  const cl = d.segments || [];
+  segsCache.set(epId, cl);
+  return cl;
+}
+
+/** 让播放器指向某一集。返回 audio 元素。 */
+function loadEpisode(ep){
+  const a = ensureAudio();
+  // 判断"是否已经加载过"必须用显式的 loaded 标记, **不能**用 playing.id === ep.id:
+  // 播放条"预置"(刷新后显示上次位置)会提前把 playing.id 设上, 于是真正的加载被跳过,
+  // src 一直是空的、readyState 停在 0, 点播放毫无反应。实测踩过。
+  // 判定"已经加载过"必须同时看 src 还在不在:
+  // 清空过 src(点过 ✕、或换源中途失败)之后, loaded 标记还留着, 但音频其实已经没了 ——
+  // 这时如果直接返回, 后面 set currentTime / play() 全部作用在一个空源上,
+  // 表现就是"点句子完全没反应, 状态栏也不报错"。实测踩过。
+  const hasSrc = !!(a.getAttribute('src') || a.currentSrc);
+  if(playing.loaded && playing.id === ep.id && hasSrc) return a;
+  playing.id = ep.id;
+  playing.loaded = true;
+  playing.title = ep.title || '未命名单集';
+  playing.show = ep.show_title || '';
+  playing.art = ep.show_image || '';
+  playing.duration = ep.duration_sec || 0;
+  playing.pending = null;
+  playing.primed = null;
+  anchorIdx = -1;
+  if(audio) { audio.pause(); audio.currentTime = 0 }
+  a.src = `/episodes/${ep.id}/audio`;
+  a.load();
+  document.body.classList.add('hasPlayer');
+  $('#bar').classList.add('on');
+  syncPlayerUI();
+  return a;
+}
+
+/** 从头开始播某一集(不需要先打开正文)。 */
+async function startEpisode(ep, atSec){
+  playing.primed = null;
+  loadEpisode(ep);
+  await loadClips(ep.id);
+  playing.pending = atSec || 0;
+  ensureAudio().play().catch(e => { $('#status').textContent = '播放失败: ' + e.message });
+}
+
+/** 从某一集的第 idx 句开始播。idx 为空则从头/当前位置继续。 */
+async function playSeg(epId, idx){
+  // 入口校验: 签名是 (epId, idx)。漏传 epId 会让 id 收到一个数字、idx 变 undefined,
+  // 然后静默走"从头继续播"那条路 —— 实测踩过, 找了两轮才定位。
+  // 这类"调用点漏改"必须立刻炸出来, 不能降级。
+  if(typeof epId !== 'string' || !epId){
+    console.error('playSeg 调用错误: 第一个参数必须是 episode id, 收到', epId, idx);
+    return;
+  }
+  const ep = (current && current.id === epId) ? current : null;
+  if(!ep) { // 不是当前打开的那一集: 先问接口拿元信息
+    const d = await api('/episodes/' + epId);
+    loadEpisode(d.episode);
+    segsCache.set(epId, d.segments || []);
+  } else {
+    loadEpisode(ep);
+    segsCache.set(epId, segments);
+  }
+  const clips = clipsOf(epId);
+  if(idx === null || idx === undefined){
+    // 继续播。注意**不要**清 playing.pending: 它可能是"从上次位置接着听"留下的,
+    // 由 loadedmetadata 消费。之前这里顺手清掉, 导致点播放又从 0 开始。
+    ensureAudio().play().catch(()=>{});
+    if(audio && audio.readyState < 1 && playing.pending == null) playing.pending = null;
+    return;
+  }
+  const seg = clips.find(c => c.idx === idx); if(!seg) return;
+  anchorIdx = idx;                       // 锚点重置: 用户主动选了新的一句
+  // 必须先作废"待跳位置": 否则音频还没加载完元数据时, 这里设的 currentTime 会被
+  // 随后的 loadedmetadata -> seekTo(pending=0) 覆盖回开头。
+  // 实测踩过: 点第 7 句却从头开始播, 因为元数据在那个瞬间才加载完。
+  playing.pending = null;
+  const a = ensureAudio();
+  if(a.readyState >= 1) a.currentTime = seg.start_sec;
+  else { a._wantSeek = seg.start_sec; a.addEventListener('loadedmetadata', () => {
+      if(a._wantSeek != null && playing.pending === null){ a.currentTime = a._wantSeek; a._wantSeek = null }
+    }, { once: true }) }
+  a.play().catch(e => { $('#status').textContent = '播放失败: ' + e.message });
+  if(current && current.id === epId){ setHighlight(idx); scrollToSeg(idx) }
+  else { curIdx = -1 }
+  syncPlayerUI();
+}
+
+/** 从某个秒数开始播(进度条 / 快进快退用)。 */
+function seekTo(sec){
+  const a = ensureAudio();
+  if(!isFinite(a.duration) || a.duration <= 0){ playing.pending = sec; return }
+  playing.pending = null;   // 已经能跳了, 不再留待跳标记(否则会被别的回调再跳一次)
+  a.currentTime = Math.max(0, Math.min(sec, a.duration - 0.3));
+  // 跳完之后锚点必须跟着走, 否则定时器会把你拖到的位置当成"当前句自然播完了":
+  // 转录只覆盖到 52:31, 而音频有 58:15 —— 拖到 53 分钟之后时, 播放头远远越过锚点句的
+  // 结束时间, 边界判定就以为该切下一句, 而"下一句"不存在, 于是直接判定"已到结尾"并暂停。
+  // 实测踩过: 拖到 3200s 之后立刻停住, 状态显示"已到结尾"。
+  anchorIdx = -1;
+  const clips = clipsOf(playing.id);
+  if(clips.length){
+    const here = clips.filter(c => c.start_sec <= a.currentTime + 0.05).pop();
+    if(here){
+      anchorIdx = here.idx;
+      if(current && current.id === playing.id){ setHighlight(here.idx); scrollToSeg(here.idx) }
+    }
+  }
+  syncPlayerUI();
+}
+function skip(delta){
+  if(!audio) return;
+  seekTo((audio.currentTime || 0) + delta);
+}
+
+function togglePlay(){
+  if(!audio || !playing.id) return;
+  if(audio.paused){
+    // 继续播: 不要走 playSeg(...,null) —— 那条路径在某些时序下会把位置重置。
+    // 停在句子间隙里时, 先回到当前句起点再播。
+    const clips = clipsOf(playing.id);
+    if(clips.length){
+      const here = clips.filter(c => c.start_sec <= audio.currentTime + 0.05).pop();
+      if(here && current && current.id === playing.id){ anchorIdx = here.idx; audio.currentTime = here.start_sec }
+    }
+    audio.play().catch(e => { $('#status').textContent = '播放失败: ' + e.message });
+  } else {
+    audio.pause();
+  }
+  syncPlayerUI();
+}
+function stopAndClose(){
+  // 这里必须把元件整个放掉(而不只是清 src):
+  // 只清 src 的话 audio 还在, 下一次点句子的 set currentTime/play 会作用在空源上,
+  // 一声不响地失败 —— 也就是"✕ 之后再也放不出声音"。
+  if(audio){ try{ audio.pause() }catch(e){} ; audio.removeAttribute('src'); try{ audio.load() }catch(e){} ; audio.remove(); audio = null }
+  playing.id = null; playing.loaded = false; playing.primed = null; playing.title = ''; playing.clips = [];
+  $('#bar').classList.remove('on');
+  document.body.classList.remove('hasPlayer');
+  closeFull();
+}
+
+// ==================== 播放器界面 ====================
+function syncPlayerUI(){
+  if(!playing.id) return;
+  const a = audio;
+  const primed = playing.primed;      // 还没真正建播放器时, 用记录里的位置显示进度
+  const dur = (a && isFinite(a.duration) && a.duration > 0) ? a.duration : (playing.duration || 0);
+  const cur = a ? (a.currentTime || 0) : (primed || 0);
+  const pct = dur > 0 ? Math.min(100, (cur / dur) * 100) : 0;
+
+  $('#barTitle').textContent = playing.title;
+  // 有节目封面就用真封面, 没有就退回耳机图标
+  const setArt = (sel) => {
+    const el = $(sel); if(!el) return;
+    if(playing.art){
+      if(el.dataset.art !== playing.art){
+        el.dataset.art = playing.art;
+        el.innerHTML = `<img src="${playing.art}" alt="" referrerpolicy="no-referrer">`;
+      }
+    } else if(el.dataset.art !== 'none'){
+      el.dataset.art = 'none'; el.textContent = '🎧';
+    }
+  };
+  setArt('#barCover'); setArt('#fullArt');
+  const clips = clipsOf(playing.id);
+  const here = clips.filter(c => c.start_sec <= cur + 0.05).pop();
+  const isCurrentEp = current && current.id === playing.id;
+  $('#barSub').textContent = (primed != null ? '上次听到这里' : (a && !a.paused ? '播放中' : '已暂停'))
+    + (dur ? ' · ' + fmtTime(cur) + ' / ' + fmtTime(dur) : '')
+    + (!primed && isCurrentEp && here ? ' · ' + (here.idx + 1) + '/' + clips.length + ' 句' : '');
+  $('#barPlay').textContent = (a && !a.paused) ? '❚❚' : '▶';
+  $('#barFill').style.width = pct + '%';
+
+  // 记住播放位置, 下次进来能接着听
+  if(isFinite(cur) && cur > 0 && tick % 8 === 0){
+    try { localStorage.setItem('et.pos.' + playing.id, JSON.stringify({ t: Math.floor(cur), idx: here ? here.idx : null })) } catch(e){}
+  }
+
+  const b = $('#playBtn');
+  if(b) b.textContent = (isCurrentEp && a && !a.paused) ? '❚❚ 暂停' : '▶ 播放';
+
+  if($('#full').classList.contains('on')){
+    $('#fullTitle').textContent = playing.title;
+    $('#fullSub').textContent = playing.show || '';
+    $('#fullCur').textContent = fmtTime(cur);
+    $('#fullDur').textContent = fmtTime(dur);
+    $('#fullBarFill').style.width = pct + '%';
+    $('#fullBarKnob').style.left = pct + '%';
+    $('#fullPlay').textContent = (a && !a.paused) ? '❚❚' : '▶';
+    $('#fullRateVal').textContent = fmtRate(rate);
+  }
+}
+// 兼容旧调用点(工具栏按钮等)
+function syncPlayBtn(){ syncPlayerUI() }
+
+function openFull(){ $('#full').classList.add('on'); syncPlayerUI() }
+function closeFull(){ $('#full').classList.remove('on') }
+
+function setHighlight(i){
+  if(curIdx>=0){ const p = $(`.s[data-i="${curIdx}"]`); if(p) p.classList.remove('cur') }
+  curIdx = i; const el = $(`.s[data-i="${i}"]`); if(el) el.classList.add('cur');
+}
+
+// 句子归属由「播放位置」唯一决定, 不管你是点进去的还是自然播到的。
+// 到了当前句末尾: 连播就接着下一句, 否则停下等你处理生词。
+setInterval(() => {
+  if(!audio || audio.paused || finding) return;
+  tick++;
+
+  // 逐句逻辑只对「正文正在读的那一集」生效。
+  // 如果你在列表页、或者打开的是别的一集, 播放器照常放, 只是不做断句停顿
+  // —— 音频本来就独立于当前显示的内容, 这是刻意的。
+  const isOpen = current && playing.id === current.id;
+  if(!isOpen || !segments.length){ syncPlayerUI(); return }
+
+  // 先判结束: 转录时间轴可能超出音频本身, 播到头了就把标记钉在最后一句上,
+  // 不能让它消失(实测踩过: 读完最后一集广告后高亮没了、页面还往下跑)。
+  const endAt = audioEndTime();
+  if(endAt !== null && audio.currentTime >= endAt){
+    const last = lastSeg();
+    if(last && last.idx !== curIdx) setHighlight(last.idx);
+    finding = true;
+    audio.pause();
+    setTimeout(() => { finding = false }, 60);
+    $('#status').textContent = '已到结尾';
+    syncPlayerUI();
+    return;
+  }
+
+  const here = segAt(audio.currentTime);
+  if(!here) return;
+  if(anchorIdx < 0) anchorIdx = here.idx;
+
+  // 你手动拖了进度条: 基准跟着你的位置走, 不要自作主张地暂停。
+  if(here.idx - anchorIdx > 1){
+    anchorIdx = here.idx;
+    setHighlight(here.idx);
+    scrollToSeg(here.idx);
+    return;
+  }
+
+  let anchor = segments.find(s => s.idx === anchorIdx);
+  if(!anchor) return;
+
+  // 兜底: 如果播放头根本不在锚点句的范围内(说明是外部拖动/跳转, 不是从这句自然播过来的),
+  // 就把锚点重新对准当前位置, 不要拿旧的锚点去判定"该不该切下一句"。
+  if(audio.currentTime > anchor.end_sec + 3 || audio.currentTime < anchor.start_sec - 3){
+    const at = segAt(audio.currentTime);
+    if(at){
+      anchorIdx = at.idx; anchor = at;
+      setHighlight(at.idx);
+      if(autoNext) scrollToSeg(at.idx);
+      return;
+    }
+  }
+
+  // 还没播完锚点这一句 —— 用这句自己的 end 判定, 不要等"进入下一句"。
+  // 实测踩过的坑: 靠"进度已进入下一句"来发现边界会晚 0.1~2.5 秒
+  // (第 7 句结束于 35.82s, 第 8 句从 38.34s 才开始), 于是停顿位置和高亮错开一句。
+  if(audio.currentTime <= anchor.end_sec + 0.08) return;
+
+  // ---- 到这里就是真正的「句子边界」, 停/继续的决策只能在这里做 ----
+  const next = segments.find(s => s.start_sec > anchor.end_sec - 0.05);
+
+  if(autoNext){
+    if(next) playSeg(playing.id, next.idx);   // 精确跳到下一句起点, 顺便跳过间隙
+    else {
+      // 转录到头了, 但音频可能还有内容 —— 实测这一集音频 58:15、转录只到 52:31,
+      // 尾部近 6 分钟是注入的广告, 没有转录。这种情况下必须继续放完, 不能提前宣布
+      // "已到结尾"停住: 停在这个位置后一旦再按播放, 播放头会被拉回锚点句起点,
+      // 听起来就是"跳回前面重放"。真正的结尾只由源文件结束/audioEndTime 决定。
+      if(!atRealEnd()) return;
+      finding = true; audio.pause(); setTimeout(() => { finding = false }, 60);
+      $('#status').textContent = '已到结尾';
+      syncPlayerUI();
+    }
+  } else {
+    // 回到刚播完那一句的起点停下等你处理生词。
+    // 不要停在静音间隙里, 否则点 ↻ 重听时前几个词会被吃掉。
+    finding = true;
+    // 先记下"真实播到哪": 下面会把播放头退回句首, 否则记住的位置会丢掉这最后一句
+    // (实测踩过: 播了 9 秒, 记录里只有 0:06, 因为记的是重置之后的值)。
+    if(!next && !atRealEnd()){
+      // 已经是最后一句、但音频还有没转录的内容 -> 不要在这里停, 让它放完
+      // (否则停下后按播放会被拉回锚点句起点, 表现为"跳回前面")
+      anchorIdx = anchor.idx;
+      return;
+    }
+    const truePos = audio.currentTime;
+    audio.pause();
+    audio.currentTime = anchor.start_sec;
+    setTimeout(() => { finding = false }, 60);
+    try { localStorage.setItem('et.pos.' + playing.id,
+      JSON.stringify({ t: Math.floor(truePos), idx: anchor.idx })) } catch(e){}
+    // 高亮留在「刚读完这一句」上, 不要提前跳到下一句:
+    // 播放头停在 anchor、高亮却指着 next, 看起来就是"标记跟我读的那句错开了"。
+    setHighlight(anchor.idx);
+    scrollToSeg(anchor.idx);
+    $('#status').textContent = '本句结束(↻ 重听 / 空格)';
+    syncPlayerUI();
+    return;
+  }
+  // 连播: 高亮跟着下一句走, 顺便把锚点推进
+  if(next){ anchorIdx = next.idx; setHighlight(next.idx); scrollToSeg(next.idx) }
+}, 100);
+
+// ==================== 句子动作表 ====================
+// 手机上点句子/单词都走这里。当前句里出现过的词全部列出来当按钮,
+// 每个按钮都是独立的大点击区, 不会再"想播放却点到词"。
+let sheetIdx = -1;
+
+function openSheet(segIdx){
+  const seg = segments.find(x => x.idx === segIdx);
+  if(!seg || !current) return;
+  sheetIdx = segIdx;
+  $('#shText').textContent = seg.text;
+  const zh = zhMap.get(segIdx);
+  $('#shZh').textContent = zh || '';
+  $('#shZh').style.display = zh ? 'block' : 'none';
+
+  // 这句里的词(去重、按出现顺序、长度>1 才列, 避免 a / of 这种噪音)
+  const words = [];
+  const seen = new Set();
+  for(const m of seg.text.matchAll(/[A-Za-z][A-Za-z'’\-]*/g)){
+    const w = m[0], k = w.toLowerCase();
+    if(k.length < 2 || seen.has(k)) continue;
+    seen.add(k); words.push(w);
+  }
+  $('#shWords').innerHTML = words.length
+    ? words.map(w => `<button data-w="${esc(w)}" class="${vocab.has(w.toLowerCase())?'marked':''}">${esc(w)}</button>`).join('')
+    : '<span class="m">这句里没有可查的单词</span>';
+  $('#shWords').querySelectorAll('button').forEach(b => {
+    b.onclick = () => { const i = sheetIdx; closeSheet(); openWordByText(b.dataset.w, i) };
+  });
+
+  // 这一集正在播且就是这一句 -> 按钮变"暂停"
+  const isCurrent = playing.id === current.id
+    && audio && !audio.paused
+    && seg.start_sec <= audio.currentTime && audio.currentTime < seg.end_sec;
+  $('#shPlay').textContent = isCurrent ? '❚❚ 暂停' : '▶ 播放这一句';
+
+  $('#sheetBack').classList.add('on');
+  $('#sheet').classList.add('on');
+}
+function closeSheet(){
+  $('#sheet').classList.remove('on');
+  $('#sheetBack').classList.remove('on');
+}
+$('#sheetBack').onclick = closeSheet;
+$('#shPlay').onclick = () => {
+  const i = sheetIdx; closeSheet();
+  if(i < 0) return;
+  const seg = segments.find(x => x.idx === i);
+  const isCurrent = playing.id === current.id && audio && !audio.paused && seg
+    && seg.start_sec <= audio.currentTime && audio.currentTime < seg.end_sec;
+  if(isCurrent) audio.pause();
+  else playSeg(current.id, i);
+};
+$('#shLoop').onclick = () => { const i = sheetIdx; closeSheet(); if(i >= 0) playSeg(current.id, i) };
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeSheet() });
+// ---------- 释义 ----------
+let pendingWord = null;
+function openWordByText(word, segIdx){ return openWord({ dataset: { w: word } }, segIdx) }
+
+async function openWord(el, segIdx){
+  const word = el.dataset.w;
+  const seg = segments.find(s => s.idx === segIdx);
+  pendingWord = { word, sentence: seg ? seg.text : '', episode_id: current.id, seg_idx: segIdx };
+  $('#pWord').textContent = word;
+  $('#pBody').innerHTML = '<div class="m">查询中…</div>';
+  syncMarkBtn(word);
+  $('#pop').showModal();
+  try{
+    const r = await api('/define', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({word, sentence: pendingWord.sentence})});
+    renderDef(r);
+  }catch(e){
+    $('#pBody').innerHTML = `<div class="m">${esc(e.message)}</div>`;
+  }
+}
+function renderDef(r){
+  const d = r.payload || {};
+  const li = a => (a||[]).map(x => `<li>${esc(typeof x==='string'? x : (x.zh? x.sense+' — '+x.zh : (x.word? x.word+' — '+x.why : JSON.stringify(x))))}</li>`).join('');
+  const roots = d.roots || {};
+  const rootBlock = roots.available
+    ? `<div class="roots"><b>词根拆解</b><br>${(roots.parts||[]).map(p=>`${esc(p.part)} = ${esc(p.meaning)}`).join(' + ')}<br><span class="m">${esc(roots.memory||'')}</span></div>`
+    : `<div class="roots m">这个词没有可靠的词根可拆, 靠语境记。</div>`;
+  $('#pBody').innerHTML = `
+    <div class="field"><div class="label">在这句话里的意思</div><div class="val">${esc(d.sense_here||'')}</div></div>
+    <div class="m">${esc(d.pos||'')} <span class="ipa">${esc(d.ipa||'')}</span>
+      ${d.lemma&&d.lemma!==pendingWord.word? ' · 原形 '+esc(d.lemma):''}
+      ${r.cached? ' · 缓存命中':''}</div>
+    ${rootBlock}
+    ${(d.other_senses||[]).length? `<div class="field"><div class="label">其他常见义</div><ul>${li(d.other_senses)}</ul></div>`:''}
+    ${(d.related?.words||[]).length? `<div class="field"><div class="label">关联词</div><ul>${li(d.related.words)}</ul></div>`:''}
+    ${(d.related?.sentences||[]).length? `<div class="field"><div class="label">关联句</div><ul>${li(d.related.sentences)}</ul></div>`:''}
+    ${d.caution? `<div class="field m">注意: ${esc(d.caution)}</div>`:''}`;
+}
+// 已标生词要有明确反馈, 否则你不知道自己标过没有(实测踩过)
+function syncMarkBtn(word){
+  const marked = vocab.has(String(word).toLowerCase());
+  const b = $('#pMark');
+  b.textContent = marked ? '✓ 已在生词本' : '标记为生词';
+  b.disabled = marked;
+  b.style.opacity = marked ? '.6' : '1';
+}
+$('#pClose').onclick = () => $('#pop').close();
+$('#pMark').onclick = async () => {
+  if(!pendingWord) return;
+  await api('/vocab', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({lemma: pendingWord.word, surface: pendingWord.word,
+      sentence: pendingWord.sentence, episode_id: pendingWord.episode_id, seg_idx: pendingWord.seg_idx})});
+  vocab.add(pendingWord.word.toLowerCase());
+  $('#article').querySelectorAll(`.w[data-w="${CSS.escape(pendingWord.word)}"]`)
+    .forEach(w => w.classList.add('marked'));
+  syncMarkBtn(pendingWord.word);
+  $('#status').textContent = '已加入生词本';
+  $('#pop').close();
+};
+
+// ---------- 导入 ----------
+$('#go').onclick = async () => {
+  const url = $('#url').value.trim(); if(!url) return;
+  $('#status').textContent = '解析中…';
+  try{
+    const r = await api('/import', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({url})});
+    $('#url').value = ''; $('#status').textContent = '已入队: '+r.title; loadList();
+  }catch(e){ $('#status').textContent = '失败: '+e.message }
+};
+$('#url').addEventListener('keydown', e => { if(e.key==='Enter') $('#go').click() });
+$('#back').onclick = () => showList(true);
+
+// 历史管理: URL 里必须始终保留当前集(#<episode_id>), 否则刷新会丢掉正在读的内容。
+// 之前 showList() 里写了 history.pushState({}, '', ' '), 会把 hash 抹掉 —— 实测踩过。
+function showList(pushHistory){
+  // 注意: 这里**不能**停音频。音频属于「正在播放的那一集」, 独立于「正在读的那一集」;
+  // 返回列表就该继续放(这是常驻播放器的全部意义)。想停请点播放条上的 ✕。
+  // 这行 pause() 是播放器还不存在时留下的, 会正好抵消掉常驻播放器 —— 实测踩过。
+  $('#list').style.display='block'; $('#reader').style.display='none';
+  $('#back').style.display='none'; current=null; segments=[]; curIdx=-1;
+  document.body.classList.remove('reading');
+  if(pushHistory) history.pushState({id:null}, '', location.pathname);
+  loadList();
+}
+// 字号也要持久化: 语速/连播/中译都记了, 唯独字号刷新后回到默认,
+// 等于每次打开都要重新调一遍(实测踩过)。
+function applyFontSize(px){
+  document.documentElement.style.setProperty('--fs', px + 'px');
+  const el = $('#fs'); if(el) el.value = px;
+}
+$('#fs').oninput = e => {
+  applyFontSize(e.target.value);
+  try{ localStorage.setItem('et.fs', String(e.target.value)) }catch(err){}
+};
+const savedFs = (() => { try{ return parseFloat(localStorage.getItem('et.fs')) }catch(e){ return NaN } })();
+if(savedFs >= 15 && savedFs <= 26) applyFontSize(savedFs);
+
+// ---------- 快捷键 ----------
+// 空格 = 重听当前句 / 从当前句播放; [ ] = 上一句 / 下一句
+document.addEventListener('keydown', e => {
+  if(e.target.tagName === 'INPUT') return;
+  if(!segments.length || curIdx < 0) return;
+  if(e.code === 'Space'){ e.preventDefault(); playSeg(current.id, curIdx) }
+  else if(e.key === ']'){ const n = segments.find(s => s.idx === curIdx + 1); if(n) playSeg(current.id, n.idx) }
+  else if(e.key === '['){ const p = segments.find(s => s.idx === curIdx - 1); if(p) playSeg(current.id, p.idx) }
+});
+
+// ---------- 启动 ----------
+applyRate();
+syncAutoScroll();   // 让「定位」按钮一开始就反映真实状态(默认跟随)
+(async () => {
+  const h = location.hash.slice(1);
+  // 列表永远要拉一次 —— 哪怕这次是直接进正文(从书签/分享链接进来)。
+  // 否则从正文点「← 列表」会看到"还没有内容", 得手动刷新才出来(实测踩过)。
+  const listPromise = loadList().catch(()=>{});
+  if(h){ try{ await openEpisode(h, false) }catch{ showList(false) } }
+  await listPromise;
+  try{ const s = await api('/health'); if(!s.running) $('#status').textContent='worker 未运行'; }catch{}
+})();
+window.addEventListener('popstate', e => {
+  const id = e.state?.id ?? location.hash.slice(1);
+  if(id) openEpisode(id, false); else showList(false);
+});
+// 有些路径不会触发 popstate(直接在地址栏改 hash、或脚本里 pushState 改 hash),
+// 但地址栏与屏幕内容必须始终一致 —— 否则刷新一次就跳回列表、或停在上一集。
+window.addEventListener('hashchange', () => {
+  const id = location.hash.slice(1);
+  if(id && (!current || current.id !== id)) openEpisode(id, false);
+  else if(!id && current) showList(false);
+});
+</script>
+</body>
+</html>
