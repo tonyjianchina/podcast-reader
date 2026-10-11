@@ -418,6 +418,103 @@ def vocab_lemmas() -> set[str]:
         return {r["lemma"] for r in rows}
 
 
+def vocab_sentence(lemma: str, episode_id: str | None, seg_idx: int | None) -> str:
+    """取「某个生词在某一集某一句」的那句原文。没标过或没记句子就返回空串。
+
+    权威原文始终是 segments, 这里是兜底: 标记那一刻存下的句子。段落一旦重新分段、
+    或者上游重转录过, 按 seg_idx 现取可能已经对不上, 那时还有这份历史记录可用。
+    """
+    if not episode_id or seg_idx is None:
+        return ""
+    with db() as conn:
+        row = conn.execute(
+            "SELECT sentence FROM vocab_items WHERE lemma = ? AND episode_id = ?"
+            " AND seg_idx = ? LIMIT 1",
+            (str(lemma or "").strip().lower(), episode_id, int(seg_idx)),
+        ).fetchone()
+    return str(row["sentence"] or "") if row else ""
+
+
+def _explained_keys() -> dict[str, str]:
+    """生词 -> 它在释义缓存里的 key(同一个词有多份缓存的取最新那份)。
+
+    释义缓存不存「这个词被划进过哪个句子」, 只有 key = sha256(lemma + 句子), 而句子是
+    哈希不回来的。所以这里**不去反推句子**: 列表按词给一个真实存在的缓存 key, 前端点开
+    时用这个 key 精确命中缓存, 不会再花一次 API 调用(--> GET /vocab/{lemma}/explain)。
+    """
+    with db() as conn:
+        rows = conn.execute(
+            "SELECT key, lemma FROM explanations WHERE lemma IS NOT NULL"
+            " AND lemma != '' ORDER BY rowid"
+        ).fetchall()
+    return {str(r["lemma"]).strip().lower(): r["key"] for r in rows}
+
+
+def vocab_grouped() -> dict[str, Any]:
+    """生词本: 按单集分组, 组内同一个词只出一条并附上它在释义缓存里的 key。
+
+    为什么不在 SQL 里 GROUP BY: 要顺带拿到 e.title / e.published_at / e.source_url,
+    再叠一层"按 episode 分组 + 组内按词去重", 一次查完在 Python 里拼更好读。
+    """
+    with db() as conn:
+        rows = conn.execute(
+            "SELECT v.id, v.lemma, v.surface, v.sentence, v.episode_id, v.seg_idx,"
+            " v.note, v.created_at, e.title AS episode_title, e.published_at,"
+            " e.source_url FROM vocab_items v"
+            " LEFT JOIN episodes e ON e.id = v.episode_id"
+            " ORDER BY v.created_at DESC, v.id DESC"
+        ).fetchall()
+
+    keys = _explained_keys()
+    groups: list[dict[str, Any]] = []
+    where: dict[str, dict[str, Any]] = {}
+    for r in rows:
+        ep = r["episode_id"] or ""
+        if ep not in where:
+            group = {
+                "episode_id": r["episode_id"],
+                "episode_title": r["episode_title"] or "(原单集已删除)",
+                "published_at": r["published_at"],
+                "source_url": r["source_url"],
+                "items": [],
+            }
+            where[ep] = group
+            groups.append(group)
+        lemma = str(r["lemma"] or "").strip().lower()
+        if not lemma:
+            continue
+        hit = next((it for it in where[ep]["items"] if it["lemma"] == lemma), None)
+        if hit:
+            # 同一个词在这一集被标了两次(不同句子): 只留最新那条, 计个数
+            hit["count"] += 1
+            continue
+        where[ep]["items"].append(
+            {
+                "id": int(r["id"]),
+                "lemma": lemma,
+                "surface": r["surface"] or lemma,
+                "sentence": r["sentence"] or "",
+                "seg_idx": r["seg_idx"],
+                "note": r["note"] or "",
+                "created_at": r["created_at"],
+                "count": 1,
+                "explanation_key": keys.get(lemma),
+            }
+        )
+
+    # 分组的先后按「这一集最后一次标词的时间」排: 你最近在弄哪一集, 它就在最上面。
+    # 不用 published_at —— 那一列常常是 NULL(小宇宙那些), 拿它排会让分组顺序看起来像随机的。
+    groups.sort(
+        key=lambda g: (max((it["created_at"] or "") for it in g["items"]), g["episode_id"] or ""),
+        reverse=True,
+    )
+    return {
+        "groups": groups,
+        "total": sum(len(g["items"]) for g in groups),
+        "raw": len(rows),
+    }
+
+
 # ------------------------------------------------------ explanations
 
 

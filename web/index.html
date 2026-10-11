@@ -57,15 +57,22 @@
   article .w.marked{background:var(--mark);box-shadow:inset 0 -1px 0 var(--accent)}
   /* 中译: 更小、更淡, 藏起来时完全不占位 */
   article .zh{display:none;font-family:-apple-system,"PingFang SC",sans-serif;
-       font-size:.68em;line-height:1.6;color:var(--dim);margin-top:.1em}
+       font-size:.68em;line-height:1.6;color:var(--dim);margin-top:.1em;
+       /* 中译是塞在单词 span 内部的块级元素, 点单词中部时会命中它而不是单词,
+          结果是"点了没反应"。让它对指针透明, 点击落到下面的英文上。 */
+       pointer-events:none}
   /* ⚠️ 这一条是「显示中译」的总开关, 删掉它整个功能会静默失效 —— 实测踩过:
      元素都在 DOM 里、文字也对, 但 computed display 一直是 none, 看起来就是没反应。
      body 上的 show-zh 类由中译勾选框维护。 */
   body.show-zh article .zh{display:block}
-  /* 显示中译时正文行距收紧一点: 英文 + 中译两行叠起来本来就变高了 */
+  /* 显示中译时的节奏。原来的问题是: 英文与中译紧贴(0px), 而中译到**下一句英文**
+     只有 2px —— 于是整段看起来像"英文一大块 + 中文一大块", 分不清哪条中译属于哪句。
+     改成: 每句连同它的中译成为一个视觉单元, 单元之间留 0.5em; 单元内部保持紧贴。 */
   body.show-zh article{line-height:1.7}
-  body.show-zh article .s{display:inline}
-  body.show-zh article .s:not(:last-child){margin-right:.15em}
+  body.show-zh article .s{display:inline-block;width:100%;margin-bottom:.5em;vertical-align:top}
+  body.show-zh article .s:last-child{margin-bottom:0}
+  /* 中译在单元内部紧跟英文 */
+  body.show-zh article .s > .zh:first-child{margin-top:0}
   h2.ep{font-family:-apple-system,sans-serif;font-size:19px;line-height:1.4;margin:0 0 4px}
   .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 22px;
            font-family:-apple-system,sans-serif;font-size:13px;color:var(--dim)}
@@ -90,6 +97,10 @@
     #fsCtl input{display:none}
     #epMeta{grid-column:1 / -1;font-size:12px}
     article{--fs:17px}
+    /* 生词本: 窄屏上「原句 + 删除」挤在一行会把原句压成一条竖线, 拆成两行 */
+    .vitem{flex-wrap:wrap}
+    .vmain{flex:1 1 100%}
+    .vx{margin-left:auto}
   }
   dialog{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--fg);
          max-width:440px;width:92vw;padding:20px;font-size:14px;line-height:1.6}
@@ -115,6 +126,70 @@
   #locateBtn.attention{border-color:var(--accent);color:var(--accent)}
   /* 阅读位置标记: 比播放高亮更淡, 只是为了让你点「定位」时知道会回到哪 */
   article .s.cursor{box-shadow:inset 3px 0 0 var(--line)}
+
+  /* ===== 生词本 =====
+     标过的词以前只散落在各集正文里(标完就找不到了), 这一页是它们的唯一归口:
+     按单集分组 -> 一眼看到"这集我挑出来过哪些词" -> 点词看释义 / 看原句 / 跳回原文。 */
+  #vocab{display:none}
+  .vg{margin:0 0 26px}
+  .vg-h{display:flex;gap:10px;align-items:baseline;margin:0 0 9px;
+        padding-bottom:6px;border-bottom:1px solid var(--line);
+        font-family:-apple-system,sans-serif}
+  .vg-h .vt{font-size:14px;font-weight:600;flex:1;line-height:1.4}
+  .vg-h .vc{font-size:12px;color:var(--dim);white-space:nowrap}
+  .vg-h .vgo{font-size:12px;color:var(--accent);cursor:pointer;white-space:nowrap;
+             background:none;border:none;padding:0;text-decoration:underline}
+  .vg ul{list-style:none;padding:0;margin:0}
+  .vitem{display:flex;gap:8px;align-items:flex-start;padding:9px 0;border-bottom:1px dashed var(--line)}
+  .vitem:last-child{border-bottom:none}
+  .vmain{flex:1;cursor:pointer;min-width:0}
+  .vw{font-family:var(--font-read);font-size:17px;font-weight:600}
+  .vitem.known .vw{box-shadow:inset 0 -2px 0 var(--mark)}
+  .vmeta{font-size:11.5px;color:var(--dim);margin-top:2px}
+  .vtag{border:1px solid var(--line);border-radius:99px;padding:0 5px;margin-left:5px}
+  .vs{font-size:12.5px;color:var(--dim);margin-top:4px;line-height:1.55;
+      display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .vd{font-size:12px;color:var(--accent);margin-top:3px}
+  .vj{cursor:pointer;text-decoration:underline}
+  .vx{flex:0 0 auto;border:none;background:none;color:var(--dim);cursor:pointer;
+      font-size:16px;line-height:1;padding:5px 7px;border-radius:8px}
+  .vx:hover{color:#b91c1c;background:var(--cur)}
+
+  /* 定位按钮: 跟随中时是实心, 取消跟随后变描边, 一眼能看出状态 */
+  #locateBtn.following{background:var(--accent);border-color:var(--accent);color:#fff}
+  #locateBtn .ic{font-size:14px}
+  /* 取消跟随后提示你去点它 */
+  #locateBtn.attention{border-color:var(--accent);color:var(--accent)}
+  /* 阅读位置标记: 比播放高亮更淡, 只是为了让你点「定位」时知道会回到哪 */
+  article .s.cursor{box-shadow:inset 3px 0 0 var(--line)}
+
+  /* ===== 生词本 =====
+     标过的词以前只散落在各集正文里(标完就找不到了), 这一页是它们的唯一归口:
+     按单集分组 -> 一眼看到"这集我挑出来过哪些词" -> 点词看释义 / 看原句 / 跳回原文。 */
+  #vocab{display:none}
+  .vg{margin:0 0 26px}
+  .vg-h{display:flex;gap:10px;align-items:baseline;margin:0 0 9px;
+        padding-bottom:6px;border-bottom:1px solid var(--line);
+        font-family:-apple-system,sans-serif}
+  .vg-h .vt{font-size:14px;font-weight:600;flex:1;line-height:1.4}
+  .vg-h .vc{font-size:12px;color:var(--dim);white-space:nowrap}
+  .vg-h .vgo{font-size:12px;color:var(--accent);cursor:pointer;white-space:nowrap;
+             background:none;border:none;padding:0;text-decoration:underline}
+  .vg ul{list-style:none;padding:0;margin:0}
+  .vitem{display:flex;gap:8px;align-items:flex-start;padding:9px 0;border-bottom:1px dashed var(--line)}
+  .vitem:last-child{border-bottom:none}
+  .vmain{flex:1;cursor:pointer;min-width:0}
+  .vw{font-family:var(--font-read);font-size:17px;font-weight:600}
+  .vitem.known .vw{box-shadow:inset 0 -2px 0 var(--mark)}
+  .vmeta{font-size:11.5px;color:var(--dim);margin-top:2px}
+  .vtag{border:1px solid var(--line);border-radius:99px;padding:0 5px;margin-left:5px}
+  .vs{font-size:12.5px;color:var(--dim);margin-top:4px;line-height:1.55;
+      display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .vd{font-size:12px;color:var(--accent);margin-top:3px}
+  .vj{cursor:pointer;text-decoration:underline}
+  .vx{flex:0 0 auto;border:none;background:none;color:var(--dim);cursor:pointer;
+      font-size:16px;line-height:1;padding:5px 7px;border-radius:8px}
+  .vx:hover{color:#b91c1c;background:var(--cur)}
 
   /* ===== 句子动作表 =====
      手机上句子由几十个可点单词组成, 手指点下去几乎必然命中某个词,
@@ -177,7 +252,7 @@
            font-size:60px;box-shadow:0 12px 34px #00000022;overflow:hidden}
   #fullArt img{width:100%;height:100%;object-fit:cover;display:block}
   #fullTitle{font-family:var(--font-read);font-size:21px;line-height:1.34;margin:26px 0 7px;
-             max-height:4em;overflow:hidden;text-align:left}
+             max-height:2.8em;overflow:hidden;text-align:left}
   #fullSub{font-size:13px;color:var(--dim)}
   /* 这里原来是 margin-top:auto, 结果标题和进度条之间被撑出一大块空白 —— 手机上很难看。
      改成紧跟信息区, 用一块弹性空白把控制区压到底部。 */
@@ -201,14 +276,16 @@
 <header>
   <h1>EnglishTool</h1>
   <button id="back" style="display:none">← 列表</button>
+  <button id="vocabBtn" title="统一看所有标记过的生词">生词本 <b id="vocabCount"></b></button>
   <input id="url" placeholder="粘贴播客分享链接 / RSS 地址 / YouTube 链接">
   <button class="primary" id="go">导入</button>
   <span class="status" id="status">就绪</span>
-  <span id="ver" title="界面版本。改了 web/index.html 就把它加一, 用来确认浏览器加载的不是旧缓存">r12</span>
+  <span id="ver" title="界面版本。改了 web/index.html 就把它加一, 用来确认浏览器加载的不是旧缓存">r15</span>
 </header>
 
 <div class="wrap">
   <div id="list"><div class="empty">还没有内容。粘贴一个播客链接开始。</div></div>
+  <div id="vocab"></div>
   <div id="reader" style="display:none">
     <h2 class="ep" id="epTitle"></h2>
     <div class="toolbar">
@@ -235,19 +312,6 @@
     <button id="pClose">关闭</button>
   </menu>
 </dialog>
-
-<!-- 句子动作表(手机点句子用) -->
-<div id="sheetBack"></div>
-<div id="sheet">
-  <div id="shGrab"></div>
-  <p id="shText"></p>
-  <p id="shZh"></p>
-  <div id="shWords"></div>
-  <div id="shActs">
-    <button id="shPlay" class="primary">▶ 播放这一句</button>
-    <button id="shLoop">↻ 重听</button>
-  </div>
-</div>
 
 <!-- 常驻底部播放器 -->
 <div id="bar">
@@ -362,6 +426,12 @@ let current = null, segments = [], vocab = new Set(), curIdx = -1;
 let anchorIdx = -1;    // 当前"该停在哪"的那一句。用户拖进度条后它可能不等于 curIdx
 let finding = false;   // 正在定位播放头时, 暂时关掉跨句检测, 免得抢走音频控制
 
+// 生词本: 从生词本点一个词 -> 打开它所在那一集的原文时, 要落回那一句。
+// 用模块级变量而不是 hash 参数: hash 已经是 #<episode_id> 了, 再往里塞句子号
+// 会和"刷新/分享链接"那套逻辑打架(见文件末尾的 popstate/hashchange)。
+let jumpSeg = null;              // 待定位的句子号, 消费一次就清掉
+const vocabState = { groups: [], items: [], total: 0, raw: 0, err: '' };
+
 // ===== 播放器状态 =====
 // 关键设计: 音频属于「playing.id」这一集, 而不是「current」(正在读的那一集)。
 // 两者分离之后, 从阅读页返回列表、甚至打开另一集, 声音都不会断。
@@ -419,7 +489,6 @@ async function openEpisode(id, push){
     (current.duration_sec? ' · '+Math.round(current.duration_sec/60)+' 分钟':'') +
     ' · '+segments.length+' 句';
   document.body.classList.add('reading');
-  closeSheet();
   if(push) history.pushState({id}, '', '#'+id);
 
   if(current.state !== 'ready'){
@@ -453,22 +522,27 @@ async function openEpisode(id, push){
   // 只比较标题会被"标题先改、正文后到"的时序骗过去。
   window.__etLoaded = { id, title: current.title || '', segs: segments.length, at: Date.now() };
 
-  // 手机上"点句子"和"点单词"的点击目标互相嵌套, 手指几乎必然命中某个词。
-  // 所以触摸设备统一走底部动作表: 点句子不动手, 先问你要干什么。
-  // 鼠标(有精确指针)保留原来的直接行为, 桌面端操作更快。
+  // 点句子播放、点单词查词。手机上点句子容易误中单词, 所以:
+  // **只有点到"值得查的词"才弹释义卡, 虚词直接放行去播放这一句。**
+  // 误触大多落在 the / of / and 这类短词上, 放行它们就能消掉大部分误弹。
+  // (试过弹底部动作表来彻底消除歧义 —— 但那把一堆虚词也列成了按钮, 更吵, 已回退。)
+  const isLookupWorthy = (w) => {
+    const t = (w || '').replace(/[^A-Za-z'’\-]/g, '');
+    return t.length >= 4 || vocab.has(t.toLowerCase());
+  };
+  // 一律用 closest() 解析真实目标: ev.target 可能是句子内部的其它元素
+  // (例如塞在单词里的中译 span), 只看 target 会漏掉点击(实测踩过: 点了没反应)。
   $('#article').querySelectorAll('.s').forEach(sp => {
     sp.onclick = ev => {
-      const touch = ev.pointerType === 'touch' || matchMedia('(hover: none)').matches;
-      if(touch){ openSheet(+sp.dataset.i); return }
-      if(ev.target.classList.contains('w')) return;
+      const w = ev.target.closest && ev.target.closest('.w');
+      if(w && isLookupWorthy(w.dataset.w)) return;    // 值得查的词由词的 handler 处理
       playSeg(current.id, +sp.dataset.i);
     };
   });
   $('#article').querySelectorAll('.w').forEach(w => {
     w.onclick = ev => {
+      if(!isLookupWorthy(w.dataset.w)) return;        // 虚词: 不当查词, 让冒泡去播放
       ev.stopPropagation();
-      const touch = ev.pointerType === 'touch' || matchMedia('(hover: none)').matches;
-      if(touch){ openSheet(+w.closest('.s').dataset.i); return }
       openWord(w, +w.closest('.s').dataset.i);
     };
   });
@@ -476,6 +550,19 @@ async function openEpisode(id, push){
   lastScrolledIdx = -1;      // 换了一集, 滚动记忆要清掉
   userScrolledAt = 0;
   window.scrollTo(0, 0);
+  // 从生词本点进来的话, 直接落到当初标这个词的那一句上。放在 scrollTo(0,0) 之后 ——
+  // 顺序反了就白跳了(先定位、再被拉回页首, 看起来就是"跳转没生效")。
+  // 这条提示要顶住函数末尾那次 status 覆盖, 所以用 jumped 标记挡一下。
+  let jumped = false;
+  if(jumpSeg != null){
+    const want = jumpSeg; jumpSeg = null;
+    if($(`.s[data-i="${want}"]`)){
+      lastScrolledIdx = -1;
+      scrollToSeg(want, true, true);
+      setHighlightCursor(want);
+      jumped = true;
+    }
+  }
   // 这一集如果正在播, 正文里的标记要跟上
   if(playing.id === id && audio){
     const cs = clipsOf(id);
@@ -488,7 +575,9 @@ async function openEpisode(id, push){
   // 它就一直在底部等着你接着听 —— 刷新页面也一样(实测反馈: 刷新后以为播放器没做出来)。
   const saved = JSON.parse(localStorage.getItem('et.pos.' + id) || 'null');
   const hasPlayer = playing.id === id;
-  if(!hasPlayer && saved){
+  // jumped 时不吃「上次听到」的进度: 你是从生词本明确跳到某一句的, 再按进度把视野
+  // 拉回上次的位置, 跳转就等于没发生(实测踩过: 目标句被顶到视口上方约 70px)。
+  if(!hasPlayer && saved && !jumped){
     playing.id = id;
     playing.title = current.title || '';
     playing.show = current.show_title || '';
@@ -500,6 +589,11 @@ async function openEpisode(id, push){
     syncPlayerUI();
   }
   if(hasPlayer) playing.primed = null;
+  syncViewChrome();
+  if(jumped){
+    $('#status').textContent = '已跳到标这个词的那一句';
+    return;
+  }
   $('#status').textContent = hasPlayer
     ? (audio && !audio.paused ? followStatus('播放中') : followStatus('已暂停'))
     : (saved ? '上次听到 ' + fmtTime(saved.t) + '(点播放接着听)' : '可读');
@@ -538,6 +632,7 @@ function pollTranslations(id){
         clearInterval(t);
         zhMap = new Map(d.translations.map(x => [x.seg_idx, x.text]));
         zhReady = true;
+        // 就地补上中译, 不重排已经渲染好的文章
         // 就地补上中译, 不重排已经渲染好的文章
         $('#article').querySelectorAll('.s').forEach(sp => {
           const zh = zhMap.get(+sp.dataset.i);
@@ -1206,64 +1301,8 @@ setInterval(() => {
   if(next){ anchorIdx = next.idx; setHighlight(next.idx); scrollToSeg(next.idx) }
 }, 100);
 
-// ==================== 句子动作表 ====================
-// 手机上点句子/单词都走这里。当前句里出现过的词全部列出来当按钮,
-// 每个按钮都是独立的大点击区, 不会再"想播放却点到词"。
-let sheetIdx = -1;
-
-function openSheet(segIdx){
-  const seg = segments.find(x => x.idx === segIdx);
-  if(!seg || !current) return;
-  sheetIdx = segIdx;
-  $('#shText').textContent = seg.text;
-  const zh = zhMap.get(segIdx);
-  $('#shZh').textContent = zh || '';
-  $('#shZh').style.display = zh ? 'block' : 'none';
-
-  // 这句里的词(去重、按出现顺序、长度>1 才列, 避免 a / of 这种噪音)
-  const words = [];
-  const seen = new Set();
-  for(const m of seg.text.matchAll(/[A-Za-z][A-Za-z'’\-]*/g)){
-    const w = m[0], k = w.toLowerCase();
-    if(k.length < 2 || seen.has(k)) continue;
-    seen.add(k); words.push(w);
-  }
-  $('#shWords').innerHTML = words.length
-    ? words.map(w => `<button data-w="${esc(w)}" class="${vocab.has(w.toLowerCase())?'marked':''}">${esc(w)}</button>`).join('')
-    : '<span class="m">这句里没有可查的单词</span>';
-  $('#shWords').querySelectorAll('button').forEach(b => {
-    b.onclick = () => { const i = sheetIdx; closeSheet(); openWordByText(b.dataset.w, i) };
-  });
-
-  // 这一集正在播且就是这一句 -> 按钮变"暂停"
-  const isCurrent = playing.id === current.id
-    && audio && !audio.paused
-    && seg.start_sec <= audio.currentTime && audio.currentTime < seg.end_sec;
-  $('#shPlay').textContent = isCurrent ? '❚❚ 暂停' : '▶ 播放这一句';
-
-  $('#sheetBack').classList.add('on');
-  $('#sheet').classList.add('on');
-}
-function closeSheet(){
-  $('#sheet').classList.remove('on');
-  $('#sheetBack').classList.remove('on');
-}
-$('#sheetBack').onclick = closeSheet;
-$('#shPlay').onclick = () => {
-  const i = sheetIdx; closeSheet();
-  if(i < 0) return;
-  const seg = segments.find(x => x.idx === i);
-  const isCurrent = playing.id === current.id && audio && !audio.paused && seg
-    && seg.start_sec <= audio.currentTime && audio.currentTime < seg.end_sec;
-  if(isCurrent) audio.pause();
-  else playSeg(current.id, i);
-};
-$('#shLoop').onclick = () => { const i = sheetIdx; closeSheet(); if(i >= 0) playSeg(current.id, i) };
-document.addEventListener('keydown', e => { if(e.key === 'Escape') closeSheet() });
 // ---------- 释义 ----------
 let pendingWord = null;
-function openWordByText(word, segIdx){ return openWord({ dataset: { w: word } }, segIdx) }
-
 async function openWord(el, segIdx){
   const word = el.dataset.w;
   const seg = segments.find(s => s.idx === segIdx);
@@ -1280,14 +1319,17 @@ async function openWord(el, segIdx){
     $('#pBody').innerHTML = `<div class="m">${esc(e.message)}</div>`;
   }
 }
-function renderDef(r){
+function renderDef(r, target){
   const d = r.payload || {};
   const li = a => (a||[]).map(x => `<li>${esc(typeof x==='string'? x : (x.zh? x.sense+' — '+x.zh : (x.word? x.word+' — '+x.why : JSON.stringify(x))))}</li>`).join('');
   const roots = d.roots || {};
   const rootBlock = roots.available
     ? `<div class="roots"><b>词根拆解</b><br>${(roots.parts||[]).map(p=>`${esc(p.part)} = ${esc(p.meaning)}`).join(' + ')}<br><span class="m">${esc(roots.memory||'')}</span></div>`
     : `<div class="roots m">这个词没有可靠的词根可拆, 靠语境记。</div>`;
-  $('#pBody').innerHTML = `
+  // 注意: 这个函数**自己写 DOM、不返回 HTML**。生词本那条路径曾经写成
+  // `$('#pBody').innerHTML = renderDef(r)`, 而 renderDef 返回 undefined,
+  // 结果卡片刚画好就被 "undefined" 覆盖掉了(实测踩过)。要复用就别再套一层赋值。
+  $(target || '#pBody').innerHTML = `
     <div class="field"><div class="label">在这句话里的意思</div><div class="val">${esc(d.sense_here||'')}</div></div>
     <div class="m">${esc(d.pos||'')} <span class="ipa">${esc(d.ipa||'')}</span>
       ${d.lemma&&d.lemma!==pendingWord.word? ' · 原形 '+esc(d.lemma):''}
@@ -1340,11 +1382,226 @@ function showList(pushHistory){
   // 返回列表就该继续放(这是常驻播放器的全部意义)。想停请点播放条上的 ✕。
   // 这行 pause() 是播放器还不存在时留下的, 会正好抵消掉常驻播放器 —— 实测踩过。
   $('#list').style.display='block'; $('#reader').style.display='none';
+  $('#vocab').style.display='none';
   $('#back').style.display='none'; current=null; segments=[]; curIdx=-1;
   document.body.classList.remove('reading');
+  syncViewChrome();
   if(pushHistory) history.pushState({id:null}, '', location.pathname);
   loadList();
 }
+
+// ==================== 生词本 ====================
+// 标过的词以前只有两个去处: 那一集正文里的高亮、和释义卡上的「✓ 已在生词本」。
+// 没有一个地方能把它们**一起**看一遍 —— 等于只写不读的生词本。这一页就是那个地方。
+//
+// 三条规矩:
+//   1. 按单集分组(而不是按时间): 同一集挑出来的词连着看, 语境能互相唤起;
+//   2. 组内同一个词只出一条(标过两次就标个「×2」), 否则复习时满屏重复;
+//   3. 只拉清单, 点开哪个词才去查那个词的释义 —— 清单本身不吃 API。
+
+/** 头部控件跟着当前视图走: 导入框只在列表页有意义。 */
+function syncViewChrome(){
+  const inList = $('#list').style.display !== 'none';
+  const n = $('#vocabCount');
+  if(n){
+    n.textContent = vocabState.total ? '· ' + vocabState.total : '';
+    n.style.display = vocabState.total ? 'inline' : 'none';
+  }
+  $('#vocabBtn').style.display = inList ? '' : 'none';
+  $('#vocab').style.display = inList ? 'none' : ($('#reader').style.display === 'none' ? 'block' : 'none');
+}
+
+/** 离开正文时把"读到哪一句"的标记收掉, 免得回列表/生词本还留一条蓝线。 */
+function clearReadingCursor(){
+  document.querySelectorAll('.s.cursor').forEach(e => e.classList.remove('cursor'));
+  curIdx = -1;
+  lastScrolledIdx = -1;
+}
+
+function showVocab(pushHistory){
+  $('#list').style.display='none'; $('#reader').style.display='none';
+  $('#vocab').style.display='block';
+  $('#back').style.display=''; current=null; segments=[];
+  document.body.classList.remove('reading');
+  clearReadingCursor();
+  syncViewChrome();
+  if(pushHistory !== false && location.hash !== '#vocab') history.pushState({}, '', '#vocab');
+  // 每次都重新拉: 你刚在正文里标完词, 切过来就该看见它(读缓存会显得"没记住")
+  $('#vocab').innerHTML = '<div class="empty">加载生词本…</div>';
+  refreshVocab();
+}
+
+async function loadVocab(){
+  try{
+    const d = await api('/vocab/grouped');
+    vocabState.groups = d.groups || [];
+    // 单集号在分组上, 不在词条上。**必须就地把 episode_id 补进每一条**, 而不是只补
+    // 拍平出来的那份副本 —— 渲染用的是 g.items, 拍平那份只给点击处理用; 两份不同步时
+    // 症状是"判断条件里的字段是 undefined, 链接/跳转静默不出现"(实测踩过)。
+    vocabState.groups.forEach(g => (g.items || []).forEach(it => {
+      it.episode_id = g.episode_id;
+      it.episode_title = g.episode_title;
+    }));
+    vocabState.items = vocabState.groups.flatMap(g => g.items || []);
+    // 顺带把词表灌进 vocab 集合。直接从 /#vocab 进来(刷新/书签)时没走过 openEpisode,
+    // 那时 vocab 是空的, 释义卡会把已经标过的词显示成「标记为生词」(实测踩过)。
+    vocab = new Set(vocabState.items.map(it => String(it.lemma).toLowerCase()));
+    vocabState.total = d.total||0;
+    vocabState.raw = d.raw||0;
+    vocabState.err = '';
+  }catch(err){
+    vocabState.groups = []; vocabState.items = []; vocabState.total = 0;
+    vocabState.err = err.message;
+  }
+}
+
+/** 把一条生词里的原句、那个词本身高亮出来(不然原句里全是黑字, 你还得自己找)。 */
+function sentWithWord(sentence, surface){
+  const s = String(sentence || '');
+  if(!s) return '';
+  const w = String(surface || '').trim();
+  if(!w) return esc(s);
+  const hit = new RegExp('\\b' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\w*', 'i').exec(s);
+  if(!hit) return esc(s);
+  return esc(s.slice(0, hit.index)) +
+    `<span class="vw">${esc(hit[0])}</span>` + esc(s.slice(hit.index + hit[0].length));
+}
+
+function fmtDay(ts){
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(ts||''));
+  return m ? `${+m[2]}/${+m[3]}` : '';
+}
+
+function vocabItemHtml(it){
+  const meta = [
+    fmtDay(it.created_at),
+    it.explanation_key ? '已有释义' : '',
+    it.count > 1 ? '×' + it.count : '',
+  ].filter(Boolean).join(' · ');
+  return `<li class="vitem" data-id="${it.id}">
+    <div class="vmain" data-act="open">
+      <div class="vw">${esc(it.lemma)}</div>
+      <div class="vmeta">${meta}</div>
+      ${it.sentence ? `<div class="vs">${sentWithWord(it.sentence, it.surface)}</div>` : ''}
+      <div class="vd">点开看释义${it.seg_idx != null && it.episode_id ? ' · <span class="vj" data-act="jump">跳到原文这一句 →</span>' : ''}</div>
+    </div>
+    <button class="vx" data-act="del" title="从生词本移除">✕</button>
+  </li>`;
+}
+
+function renderVocab(){
+  const el = $('#vocab');
+  if(vocabState.err){
+    el.innerHTML = `<div class="empty">生词本打不开: ${esc(vocabState.err)}<br><br>`
+      + `<button id="vRetry">重试</button></div>`;
+    const r = $('#vRetry'); if(r) r.onclick = () => { $('#vocab').innerHTML = '<div class="empty">加载生词本…</div>'; refreshVocab() };
+    return;
+  }
+  if(!vocabState.total){
+    el.innerHTML = '<div class="empty">生词本还是空的。<br><br>'
+      + '在正文里点一个单词, 释义卡上点「标记为生词」, 它就会出现在这里。</div>';
+    syncViewChrome();
+    $('#status').textContent = '生词本为空';
+    return;
+  }
+  el.innerHTML = vocabState.groups.map(g => `
+    <div class="vg">
+      <div class="vg-h">
+        <span class="vt">${esc(g.episode_title || '(未知单集)')}</span>
+        <span class="vc">${g.items.length} 个词</span>
+        ${g.episode_id ? `<button class="vgo" data-ep="${esc(g.episode_id)}">读这一集 →</button>` : ''}
+      </div>
+      <ul>${g.items.map(vocabItemHtml).join('')}</ul>
+    </div>`).join('');
+  bindVocab(el);
+  syncViewChrome();
+  $('#status').textContent = `${vocabState.total} 个生词`
+    + (vocabState.raw > vocabState.total ? `(共标过 ${vocabState.raw} 次)` : '');
+}
+
+function bindVocab(el){
+  el.querySelectorAll('.vitem').forEach(li => {
+    const id = +li.dataset.id;
+    const it = vocabState.items.find(x => x.id === id);
+    if(!it) return;
+    li.querySelector('[data-act="open"]').onclick = ev => {
+      // 卡片里那个「跳到原文」的链接在 open 区的内部, 别把它也当成"点开看释义"
+      if(ev.target.closest('[data-act="jump"]')) return;
+      openVocabWord(it);
+    };
+    const j = li.querySelector('[data-act="jump"]');
+    if(j) j.onclick = ev => { ev.stopPropagation(); jumpToWord(it) };
+    li.querySelector('[data-act="del"]').onclick = async () => {
+      // 先问一句: 删掉不可逆, 而且这个 ✕ 紧挨着"点开看释义", 很容易误触
+      if(!confirm('从生词本移除「' + it.lemma + '」?')) return;
+      try{
+        await api('/vocab/' + id, {method:'DELETE'});
+        vocab.delete(String(it.lemma).toLowerCase());
+        await refreshVocab();
+        $('#status').textContent = '已移除: ' + it.lemma;
+      }catch(err){ $('#status').textContent = '移除失败: ' + err.message }
+    };
+  });
+  el.querySelectorAll('.vgo').forEach(b => {
+    b.onclick = () => { jumpSeg = null; openEpisode(b.dataset.ep, true) };
+  });
+}
+
+/** 重新拉清单并重画(只在生词本视图里重画, 别把正文顶掉)。 */
+async function refreshVocab(){
+  await loadVocab();
+  if($('#vocab').style.display !== 'none') renderVocab();
+  else syncViewChrome();
+}
+
+/** 生词本里点开一个词: 复用释义卡, 句子用 seg_idx 现取(和标记时那句一致, 缓存才命中)。 */
+async function openVocabWord(it){
+  const ep = it.episode_id;
+  let segs = ep ? segsCache.get(ep) : null;
+  if(!segs && ep){
+    try{
+      const d = await api('/episodes/' + ep);
+      segs = d.segments || [];
+      segsCache.set(ep, segs);
+    }catch{ segs = [] }
+  }
+  // 这一步纯粹为了拼出"当时那句话"。seg_idx 取不到就退回标记时存的那份句子。
+  const sent = ((segs||[]).find(s => s.idx === it.seg_idx) || {}).text || it.sentence || '';
+
+  $('#pWord').textContent = it.lemma;
+  $('#pBody').innerHTML = '<div class="m">查询中…</div>';
+  syncMarkBtn(it.lemma);
+  if(!$('#pop').open) $('#pop').showModal();
+
+  const prevWord = pendingWord;
+  pendingWord = { word: it.surface || it.lemma, sentence: sent,
+                  episode_id: ep, seg_idx: it.seg_idx, inVocab: true };
+
+  try{
+    const q = new URLSearchParams();
+    if(ep) q.set('episode_id', ep);
+    if(it.seg_idx != null) q.set('seg_idx', String(it.seg_idx));
+    // renderDef 自己写 DOM(不返回 HTML), 所以这里只 await, 不要再套一层 innerHTML 赋值
+    renderDef(await api('/vocab/' + encodeURIComponent(it.lemma) + '/explain?' + q.toString()));
+  }catch(err){
+    pendingWord = prevWord;
+    $('#pBody').innerHTML = '<div class="m">查不到释义: ' + esc(err.message) + '</div>';
+  }
+}
+
+$('#vocabBtn').onclick = () => showVocab(true);
+
+/** 从生词本跳回原文: 打开那一集, 并停在当初标这个词的那一句上。
+ *
+ *  句子号只交给 jumpSeg, 由 openEpisode 在正文渲染完之后消费 —— 这里不能自己滚,
+ *  此刻正文还没渲染出来(要滚的那个元素都还不存在)。
+ */
+function jumpToWord(it){
+  if(!it.episode_id) return;
+  jumpSeg = (it.seg_idx == null) ? null : it.seg_idx;
+  openEpisode(it.episode_id, true);
+}
+
 // 字号也要持久化: 语速/连播/中译都记了, 唯独字号刷新后回到默认,
 // 等于每次打开都要重新调一遍(实测踩过)。
 function applyFontSize(px){
@@ -1376,19 +1633,24 @@ syncAutoScroll();   // 让「定位」按钮一开始就反映真实状态(默�
   // 列表永远要拉一次 —— 哪怕这次是直接进正文(从书签/分享链接进来)。
   // 否则从正文点「← 列表」会看到"还没有内容", 得手动刷新才出来(实测踩过)。
   const listPromise = loadList().catch(()=>{});
-  if(h){ try{ await openEpisode(h, false) }catch{ showList(false) } }
+  // #vocab 是「生词本」这个视图的地址。刷新 / 从书签进来时得还原成生词本,
+  // 不能被当成某个单集 id 去拉(那只会得到一句"打不开这一集")。
+  if(h === 'vocab') showVocab(false);
+  else if(h){ try{ await openEpisode(h, false) }catch{ showList(false) } }
   await listPromise;
-  try{ const s = await api('/health'); if(!s.running) $('#status').textContent='worker 未运行'; }catch{}
+  try{ const s = await api('/health'); if(!s.running && h !== 'vocab') $('#status').textContent='worker 未运行' }catch{}
 })();
 window.addEventListener('popstate', e => {
   const id = e.state?.id ?? location.hash.slice(1);
-  if(id) openEpisode(id, false); else showList(false);
+  if(id === 'vocab') showVocab(false);
+  else if(id) openEpisode(id, false); else showList(false);
 });
 // 有些路径不会触发 popstate(直接在地址栏改 hash、或脚本里 pushState 改 hash),
 // 但地址栏与屏幕内容必须始终一致 —— 否则刷新一次就跳回列表、或停在上一集。
 window.addEventListener('hashchange', () => {
   const id = location.hash.slice(1);
-  if(id && (!current || current.id !== id)) openEpisode(id, false);
+  if(id === 'vocab'){ if($('#vocab').style.display === 'none') showVocab(false) }
+  else if(id && (!current || current.id !== id)) openEpisode(id, false);
   else if(!id && current) showList(false);
 });
 </script>

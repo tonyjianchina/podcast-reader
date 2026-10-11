@@ -1,0 +1,107 @@
+[
+  {
+    "name": "头部有「生词本」入口",
+    "pass": true,
+    "extra": "{\"found\":true,\"visible\":true,\"ver\":\"r13\"}"
+  },
+  {
+    "name": "点开后显示生词本视图",
+    "pass": true,
+    "extra": "#vocab"
+  },
+  {
+    "name": "按单集分组(2 集)",
+    "pass": true,
+    "extra": "groups=2"
+  },
+  {
+    "name": "组内同词只出一条",
+    "pass": true,
+    "extra": ""
+  },
+  {
+    "name": "重复标记的词标了次数",
+    "pass": true,
+    "extra": "10/11 · 已有释义 · ×2"
+  },
+  {
+    "name": "原句里的那个词被高亮出来",
+    "pass": true,
+    "extra": ""
+  },
+  {
+    "name": "每条都有「跳到原文这一句」",
+    "pass": true,
+    "extra": ""
+  },
+  {
+    "name": "状态栏显示总数",
+    "pass": true,
+    "extra": "4 个生词(共标过 5 次)"
+  },
+  {
+    "name": "点词打开释义卡",
+    "pass": true,
+    "extra": "{\"open\":true,\"word\":\"clunky\"}"
+  },
+  {
+    "name": "走的是生词本释义接口",
+    "pass": true,
+    "extra": "/vocab/grouped,/vocab/clunky/explain?episode_id=92eb5fce79f2&seg_idx=15"
+  },
+  {
+    "name": "卡片里是中文释义(缓存命中, 不是报错)",
+    "pass": true,
+    "extra": " 在这句话里的意思（因句子只有“Of course.”，无法确定 clunky 在本句中的具体含义；若按常见科技/财经语"
+  },
+  {
+    "name": "卡片标明已在生词本",
+    "pass": true,
+    "extra": "✓ 已在生词本"
+  },
+  {
+    "name": "跳到原文并打开那一集",
+    "pass": true,
+    "extra": "#92eb5fce79f2"
+  },
+  {
+    "name": "落点是标这个词的那一句(idx=3)",
+    "pass": true,
+    "extra": "curIdx=3 of it. And so I kind of shrink the team "
+  },
+  {
+    "name": "那一句里确实有这个词",
+    "pass": true,
+    "extra": ""
+  },
+  {
+    "name": "落点在视口内(真的滚过去了)",
+    "pass": true,
+    "extra": "scrollY=538 vh=738 rect={\"top\":327,\"bottom\":411}"
+  },
+  {
+    "name": "生词本里还有可删的词",
+    "pass": true,
+    "extra": "agentic"
+  },
+  {
+    "name": "移除后列表少一条",
+    "pass": true,
+    "extra": "agentic: 4 -> 3 已移除: agentic"
+  },
+  {
+    "name": "取消确认则不删",
+    "pass": true,
+    "extra": "3 -> 3"
+  },
+  {
+    "name": "刷新后仍在生词本(#vocab 可书签/可刷新)",
+    "pass": true,
+    "extra": "{\"vocabShown\":true,\"groups\":1,\"status\":\"3 个生词(共标过 4 次)\",\"errors\":[]}"
+  },
+  {
+    "name": "全程无 JS 报错",
+    "pass": true,
+    "extra": ""
+  }
+]

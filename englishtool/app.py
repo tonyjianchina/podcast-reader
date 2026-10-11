@@ -234,6 +234,48 @@ async def vocab() -> list[dict[str, Any]]:
     return db.list_vocab()
 
 
+@app.get("/vocab/grouped")
+async def vocab_grouped() -> dict[str, Any]:
+    """生词本页面用: 按单集分组 + 组内按词去重 + 带释义缓存 key。
+
+    刻意不返回释义正文 —— 生词会越攒越多, 一次把所有释义塞进响应是白流量;
+    点开某个词时再走 /vocab/{lemma}/explain 精确命中缓存。
+    """
+    return db.vocab_grouped()
+
+
+@app.get("/vocab/{lemma}/explain")
+async def vocab_explain(lemma: str, episode_id: str = "", seg_idx: int | None = None) -> dict[str, Any]:
+    """生词本里点开一个词: 先按「标记时那句话」命中缓存, 缓存没有才花钱查。
+
+    句子优先用调用方给的 seg_idx 现取 —— 它是最权威的原文; 取不到就退回
+    vocab_items.sentence(标记那一刻存下来的那份)。
+    """
+    word = (lemma or "").strip()
+    if not word:
+        raise HTTPException(400, "缺少 lemma")
+
+    # 句子优先用 seg_idx 现取(segments 才是权威原文), 取不到再退回标记那一刻存的那份。
+    sentence = ""
+    if episode_id and seg_idx is not None:
+        sentence = next(
+            (str(s["text"] or "") for s in db.get_segments(episode_id)
+             if int(s["idx"]) == int(seg_idx)),
+            "",
+        )
+    if not sentence:
+        sentence = db.vocab_sentence(word, episode_id, seg_idx)
+    if not sentence:
+        raise HTTPException(404, "这个词没有留下原句, 无法按语境释义")
+
+    try:
+        return await define.define(word, sentence)
+    except RuntimeError as exc:
+        raise HTTPException(503, str(exc)) from exc
+    except (httpx.HTTPError, KeyError, ValueError, TypeError) as exc:
+        raise HTTPException(503, f"查询词义失败(上游异常): {type(exc).__name__}") from exc
+
+
 @app.post("/vocab")
 async def add_vocab(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
     lemma = _text(payload, "lemma")

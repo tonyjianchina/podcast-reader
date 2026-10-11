@@ -128,10 +128,10 @@ def transcribe_chunked(
     total = _probe_duration(audio_path)
     if not total or total <= chunk_sec + 5:
         # 短音频不用分块, 分块反而会因为切断句子而变差
-        return transcribe_range(
+        return split_multi_sentence(transcribe_range(
             audio_path, 0.0, total or 0.0, model=model, language=language,
             prompt=prompt, offset=offset_sec,
-        )
+        ))
 
     import tempfile
 
@@ -144,10 +144,10 @@ def transcribe_chunked(
             wav = Path(td) / f"chunk{idx:03d}.wav"
             if not _write_wav(audio_path, wav, start, dur):
                 print(f"[transcribe] 切块失败 {start:.0f}s, 退回整文件转录", flush=True)
-                return transcribe_range(
+                return split_multi_sentence(transcribe_range(
                     audio_path, 0.0, total, model=model, language=language,
                     prompt=prompt, offset=offset_sec,
-                )
+                ))
             part = transcribe_range(
                 wav, start, start + dur, model=model, language=language,
                 prompt=prompt, offset=start + offset_sec,
@@ -161,7 +161,8 @@ def transcribe_chunked(
             idx += 1
             # 下一块从「本块结束 - 重叠」开始, 但至少前进 chunk_sec, 避免死循环
             start = start + chunk_sec
-    return merged
+    # 全部分块合并之后再拆多句段: 这样跨块的碎片也能并回正确的前一句
+    return split_multi_sentence(merged)
 
 
 def _similar(a: str, b: str) -> float:
@@ -214,6 +215,58 @@ def _merge(
     merged = trimmed + kept
 
     return _drop_stub_segments(_dedupe(trimmed + kept))
+
+
+def split_multi_sentence(
+    segs: list[dict[str, Any]], min_words: int = 3
+) -> list[dict[str, Any]]:
+    """把"一个片段里装了多句话"的段拆成单句, 时间按字数比例分配。
+
+    Whisper 经常把连续的几句话并成一条(实测占 11~17%, 最夸张的一条 30 秒塞了 7 句)。
+    后果不只是翻译变成"一整段": 高亮和跟随滚动都以段为单位, 于是"整段一起亮、整段一起滚"
+    —— 这正是"定位不是每句话"的根源。所以必须在数据层拆开, 光靠 CSS 调间距治不了。
+
+    只按标点拆、不改一个字; 时间按字符数比例分配, 误差通常在 1 秒内。
+    太短的碎片(少于 min_words 个词)不单独成句, 并回前一条, 免得出现 "of it." 这种噪音。
+    """
+    import re
+
+    out: list[dict[str, Any]] = []
+    for s in segs:
+        text = (s.get("text") or "").strip()
+        span = float(s["end_sec"]) - float(s["start_sec"])
+        # 句末标点 + 空格 + 大写/引号/括号 = 新一句的开始
+        parts = re.split(r'(?<=[.!?])\s+(?=[A-Z"\'(\[])', text) if text else []
+        parts = [p.strip() for p in parts if p.strip()]
+        if len(parts) <= 1 or span <= 0:
+            out.append(s)
+            continue
+        # 先累积、够长才落成一条: 这样 "of it." 这类跨段碎片会和它**后面**的句子
+        # 合成一条(并回前面会让时间戳跳回上一段, 破坏单调性)。
+        parts2: list[str] = []
+        buf: list[str] = []
+        for part in parts:
+            buf.append(part)
+            if len(part.split()) >= min_words:
+                parts2.append(" ".join(buf))
+                buf = []
+        if buf:
+            if parts2:
+                parts2[-1] = parts2[-1] + " " + " ".join(buf)
+            else:
+                parts2.append(" ".join(buf))
+
+        if len(parts2) <= 1:
+            out.append({**s, "text": parts2[0] if parts2 else text})
+            continue
+        total_chars = sum(len(m) for m in parts2) or 1
+        t = float(s["start_sec"])
+        for i, m in enumerate(parts2):
+            share = span * (len(m) / total_chars)
+            end = float(s["end_sec"]) if i == len(parts2) - 1 else t + share
+            out.append({"start_sec": round(t, 2), "end_sec": round(end, 2), "text": m})
+            t = end
+    return out
 
 
 # 一条"句子"最长不该超过这么多秒; 超过就是 Whisper 把一段没听清的内容

@@ -18,7 +18,18 @@ const path = await import("node:path");
 //   .qa/env.json  {"page": "p4", "base": "http://127.0.0.1:8788", "out": "...", "tag": "r1", "phases": "main", "only": "B3,B4"}
 // 项目根按脚本自身位置解析, 不写死绝对路径:
 // 这个文件在 <ROOT>/.qa/run.mjs, 所以往上两级就是 ROOT。
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
+//
+// 例外: 脚本经 stdin 喂给 `ego-browser nodejs` 时, import.meta.url 不是真实文件路径
+// (形如 file:////[eval2]), 这里会退化成 "/", 于是变成去读 /.qa/suite.js。
+// 那种情况下用 `--root=/绝对/路径` 或环境变量 ET_QA_ROOT 指定项目根。
+const SCRIPT_ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
+// --root / ET_QA_ROOT 二选一即可(ego 的运行时会把环境变量清掉, 所以命令行参数更可靠)
+const ROOT_ARG = /--root=([^\s]+)/.exec(process.argv.slice(1).join(" "));
+const ROOT = ROOT_ARG
+  ? path.resolve(ROOT_ARG[1])
+  : process.env.ET_QA_ROOT
+    ? path.resolve(process.env.ET_QA_ROOT)
+    : SCRIPT_ROOT;
 const fileCfg = await fs
   .readFile(path.join(ROOT, ".qa/env.json"), "utf8")
   .then(JSON.parse)
@@ -48,7 +59,9 @@ const SPACE = cfg.space;
 const PHASES = String(cfg.phases).split(",").map((s) => s.trim()).filter(Boolean);
 const PAGE = cfg.page;
 
-const read = (p) => fs.readFile(path.join(ROOT, p), "utf8");
+// 绝对路径原样用, 相对路径按 ROOT 解析 —— 不能只写 path.join(ROOT, p):
+// 一旦 ROOT 退化成 "/", path.join 会把绝对路径也拼坏。
+const read = (p) => fs.readFile(path.resolve(ROOT, p), "utf8");
 const SUITE_FILE = cfg.suite || ".qa/suite.js";
 const [suiteSrc, driverSrc, engineSrc, fixture] = await Promise.all([
   read(SUITE_FILE),
