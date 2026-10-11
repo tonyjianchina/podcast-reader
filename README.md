@@ -1,4 +1,4 @@
-# EnglishTool
+# Podcast Reader
 
 把一集播客变成一篇**可精读、可标注、可查词的文章**的私人阅读器。
 
@@ -85,7 +85,7 @@ uv run et define ubiquitous "Smartphones have become ubiquitous in modern life."
   - **点词条** → 弹出释义卡(走 `/vocab/{词}/explain`,按当时那句原句命中缓存,**不重复花钱**)
   - **跳到原文这一句 →** → 打开那一集,自动滚到并标出当初标这个词的那一句
   - **✕** → 从生词本移除(会先确认一次)
-- 工具栏:**语速**(默认 0.75×)、**连播**、**跟随滚动**、**中译**、**播放/暂停**、**↻ 重听**、**字号**
+- 工具栏:**语速**(默认 0.75×)、**连播**、**中译**、**播放/暂停**、**◎ 定位**、**↻ 重听**、**字号**
 - 快捷键:**空格** 重听当前句,`[` / `]` 上一句 / 下一句
 
 ---
@@ -176,13 +176,19 @@ uv run et retranscribe <episode_id>     # 重转录并重建段落、逐句中�
 ```bash
 .venv/bin/python .qa/mkfixture.py                  # 复制一份真实库 + 造边角单集(绝不碰 data/app.db)
 ET_PORT=8788 ET_DB_PATH=.qa/test.db ET_NO_WORKER=1 \
-  .venv/bin/python -m uvicorn englishtool.app:app --host 127.0.0.1 --port 8788
+  .venv/bin/python -m uvicorn podcast_reader.app:app --host 127.0.0.1 --port 8788
 ego-browser nodejs < .qa/run.mjs                   # 配置见 .qa/env.json
 ```
 
 覆盖:列表与导入失败、正文渲染、点句播放、释义卡与生词、逐句停/连播/快捷键、常驻与全屏播放器、
 进度条拖拽、设置与播放位置跨刷新、中译、390×844 手机视口、冷启动、离线、音频丢失、失败态、鉴权。
-最近一轮:**56/56 通过,14 个缺陷已修复**,详见 `EnglishTool-测评报告.html`。
+最近一轮(2026-10-11 09:19,`run-final5`):**50 项用例 44 通过 / 6 失败**。
+其中 D1/D2/D3/D4/I5 是无头 Chromium 的计时环境问题(与改动无关、逐轮结果会浮动),
+B5 是用例断言过时、**已在包名统一(unified rename)那一轮修掉**,修后连跑 3 次均通过
+(结果存 `.qa/out/run-package-rename.json`)。逐条说明见下面的缺陷表。
+
+> 跑这轮时注意:释义卡相关用例(B4/C1/C2/C5/J1/J2)会真的调 DeepSeek 接口,
+> 网络慢或限流时它们会成片超时,整轮通过数会在 41~50 之间浮动 —— 那是环境噪声, 不是回归。
 
 生词本页面另有一份独立冒烟用例(21 项:分组、同词去重、释义缓存命中、跳回原句、移除、刷新保持):
 
@@ -206,7 +212,7 @@ ego-browser nodejs < .qa/run.mjs --root="$PWD"
 
 | 用例 | 现象 | 性质 |
 |---|---|---|
-| B5 | 缺少 `#autoscroll` | 界面里「跟随滚动」是 `#locateBtn` 的类切换,没有这个 id;用例的断言过时 |
+| B5 | 缺少 `#autoscroll` | 界面里「跟随滚动」是 `#locateBtn` 的类切换,没有这个 id;**已修**:改成断言无勾选框 + 默认处于跟随中 |
 | D1 / D2 / D4 | 等"停句"超时 | 无头 Chromium 里 `currentTime` 不按真实时间推进,播不完 12 秒;环境相关 |
 | D3 | `null.checked` | 依赖 D1 的前置状态 |
 | I5 | 音频缺失用例超时 | 同 D1,环境相关 |
@@ -216,7 +222,7 @@ ego-browser nodejs < .qa/run.mjs --root="$PWD"
 ## 目录结构
 
 ```
-englishtool/
+podcast_reader/
   config.py       所有路径/开关/热词表
   db.py           SQLite:segments 存原文不可改,paragraphs 只存索引
   resolve.py      分享链接 → RSS feed
@@ -232,5 +238,5 @@ web/index.html    阶段 1 的临时阅读界面
 data/app.db       SQLite 数据库
 data/audio/       音频原件(唯一副本在 Mac 上)
 .qa/              自动化测评(夹具生成 / 用例 / 驱动 / 报告)
-EnglishTool-测评报告.html   最近一轮真实浏览器测评报告
+EnglishTool-测评报告.html   历史测评报告(2026-10-11 03:51,改名前的包名与用例数,保留作存档)
 ```

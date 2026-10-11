@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>EnglishTool</title>
+<title>Podcast Reader</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="EnglishTool">
+<meta name="apple-mobile-web-app-title" content="Podcast Reader">
 <meta name="theme-color" content="#faf9f7">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icon.svg">
@@ -274,7 +274,7 @@
 </head>
 <body>
 <header>
-  <h1>EnglishTool</h1>
+  <h1>Podcast Reader</h1>
   <button id="back" style="display:none">← 列表</button>
   <button id="vocabBtn" title="统一看所有标记过的生词">生词本 <b id="vocabCount"></b></button>
   <input id="url" placeholder="粘贴播客分享链接 / RSS 地址 / YouTube 链接">
@@ -1628,6 +1628,12 @@ document.addEventListener('keydown', e => {
 // ---------- 启动 ----------
 applyRate();
 syncAutoScroll();   // 让「定位」按钮一开始就反映真实状态(默认跟随)
+// `.qa/engine.js` 靠这个把"刷新页面"重放一遍(脚本是整页脚本, 用例不能真的 reload)。
+// 只读一下 localStorage 再刷按钮状态, 不改行为。
+window.__etSyncAutoScroll = () => {
+  autoScroll = localStorage.getItem('et.autoscroll') !== '0';
+  syncAutoScroll();
+};
 (async () => {
   const h = location.hash.slice(1);
   // 列表永远要拉一次 —— 哪怕这次是直接进正文(从书签/分享链接进来)。

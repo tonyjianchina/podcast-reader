@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 QA = ROOT / ".qa"
-OUT = ROOT / "EnglishTool-测评报告.html"
+OUT = ROOT / "Podcast-Reader-测评报告.html"
 
 run = json.loads((QA / "out" / "run-final5.json").read_text(encoding="utf-8"))
 defects = json.loads((QA / "report" / "defects.json").read_text(encoding="utf-8"))
@@ -216,7 +216,7 @@ def main() -> None:
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>EnglishTool 真实浏览器测评报告</title>
+<title>Podcast Reader 真实浏览器测评报告</title>
 <style>{CSS}</style>
 </head>
 <body>
@@ -226,7 +226,7 @@ def main() -> None:
   <div class="stamp">
     <div>
       <div class="kicker">端到端测评 · 真实浏览器 · 无 mock</div>
-      <h1>EnglishTool<br><em>能发给外人用了吗</em></h1>
+      <h1>Podcast Reader<br><em>能发给外人用了吗</em></h1>
       <p class="sub">对「粘贴播客链接 → 转录 → 精读」这条私人阅读器做的场景化实测:
       {total} 条用例在真实 Chromium 里逐条演一遍,另有 {len(defects)} 个缺陷被复现、定位、修复、回归。</p>
     </div>
@@ -297,7 +297,7 @@ def main() -> None:
 
 <span class="c"># 2) 起测试实例:独立数据库、不起后台 worker</span>
 ET_PORT=8788 ET_DB_PATH=.qa/test.db ET_NO_WORKER=1 \\
-  .venv/bin/python -m uvicorn englishtool.app:app --host 127.0.0.1 --port 8788
+  .venv/bin/python -m uvicorn podcast_reader.app:app --host 127.0.0.1 --port 8788
 
 <span class="c"># 3) 跑全部场景(配置见 .qa/env.json: 页面标签 / 实例地址 / 跑哪些相)</span>
 ego-browser nodejs &lt; .qa/run.mjs
@@ -307,7 +307,7 @@ ego-browser nodejs &lt; .qa/run.mjs
 ego-browser nodejs &lt; .qa/run.mjs
 
 <span class="c"># 5) 鉴权实例(token 开着也要能用)</span>
-ET_PORT=8789 ET_TOKEN=qa-secret-token .venv/bin/python -m uvicorn englishtool.app:app --host 127.0.0.1 --port 8789
+ET_PORT=8789 ET_TOKEN=qa-secret-token .venv/bin/python -m uvicorn podcast_reader.app:app --host 127.0.0.1 --port 8789
 <span class="c">#    .qa/env.json -> {{"base": "http://127.0.0.1:8789", "suite": ".qa/authsuite.js", "phases": "auth"}}</span>
 
 <span class="c"># 结果落在 .qa/out/run-&lt;tag&gt;.json</span></pre>
@@ -346,7 +346,7 @@ ET_PORT=8789 ET_TOKEN=qa-secret-token .venv/bin/python -m uvicorn englishtool.ap
 </section>
 
 <footer>
-  <span>EnglishTool 测评报告 · {datetime.now().strftime('%Y-%m-%d %H:%M')}</span>
+  <span>Podcast Reader 测评报告 · {datetime.now().strftime('%Y-%m-%d %H:%M')}</span>
   <span>原始结果:<code>.qa/out/run-final5.json</code> · 缺陷表:<code>.qa/report/defects.json</code> · 用例:<code>.qa/suite.js</code></span>
 </footer>
 </div>

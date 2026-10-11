@@ -12,7 +12,7 @@ async def notify(title: str, body: str = "", url: str | None = None) -> bool:
         print(f"[notify] 未配置 ET_BARK_URL, 跳过推送: {title}", flush=True)
         return False
     endpoint = BARK_URL.rstrip("/") + "/push"
-    payload = {"title": title, "body": body, "group": "EnglishTool"}
+    payload = {"title": title, "body": body, "group": "Podcast Reader"}
     if url:
         payload["url"] = url
     try:

@@ -11,6 +11,9 @@
   --ok:#1c6b47; --okbg:#dcebe0; --bad:#a3322a; --badbg:#f3ddd9;
   --amber:#9a5b09; --amberbg:#f0e2c8;
   --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  .histnote{margin:18px 0 0;padding:12px 16px;background:var(--amberbg);border:1px solid var(--rule2);
+    border-left:3px solid var(--amber);font-size:13px;line-height:1.65;color:var(--ink2)}
+  .histnote b{color:var(--amber)}
   --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
 }
 *{box-sizing:border-box}
@@ -146,6 +149,14 @@ footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--rule);color:v
     <div><span class="n">0</span><span class="l">未捕获异常</span></div>
   </div>
 </header>
+
+<div class="histnote">
+  <b>历史存档</b> · 这份报告生成于包名统一之前(当时还叫 EnglishTool,用例数 56)。
+  工具现已更名为 <b>Podcast Reader</b>,Python 包为 <code>podcast_reader</code>,当前用例集为
+  主套件 50 项 + 鉴权 6 项。本报告反映的是 <b>2026-10-11 03:51 那一刻</b>的状态,
+  之后 <code>.qa/out/run-final5.json</code> 已被新的一轮覆盖(最新一轮 50 项 44 通过),
+  所以不要把这里的数字当作当前结果 —— 当前状态见 <code>README.md</code> 的缺陷表。
+</div>
 
 <section>
   <h2><span class="num">01 / 结论</span>能不能发出去</h2>
@@ -855,8 +866,8 @@ ET_PORT=8789 ET_TOKEN=qa-secret-token .venv/bin/python -m uvicorn englishtool.ap
 </section>
 
 <footer>
-  <span>EnglishTool 测评报告 · 2026-10-11 03:51</span>
-  <span>原始结果:<code>.qa/out/run-final5.json</code> · 缺陷表:<code>.qa/report/defects.json</code> · 用例:<code>.qa/suite.js</code></span>
+  <span>EnglishTool 测评报告(历史存档,包名统一前的产物) · 2026-10-11 03:51</span>
+  <span>当时来源:<code>.qa/out/run-final5.json</code>(<b>已被后续一轮覆盖</b>) · 缺陷表:<code>.qa/report/defects.json</code> · 用例:<code>.qa/suite.js</code></span>
 </footer>
 </div>
 </body>

@@ -293,7 +293,8 @@ await page.evaluate(() => {
   localStorage.setItem("et.rate", "0.75");
   localStorage.setItem("et.showzh", "0");
   localStorage.setItem("et.autonext", "0");
-  localStorage.setItem("et.autoscroll", "0");
+  // 不设 et.autoscroll: 让它走真实默认值(默认开, 状态在「定位」按钮上)。
+  // 原来这里写死 "0", 与"默认开"的设计相反, 会让 B5 误报。
 });
 await gotoURL("/");
 

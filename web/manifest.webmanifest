@@ -1,6 +1,6 @@
 {
-  "name": "EnglishTool",
-  "short_name": "EnglishTool",
+  "name": "Podcast Reader",
+  "short_name": "Podcast Reader",
   "description": "把播客单集变成可精读、可标注、可查词的文章",
   "start_url": "/",
   "scope": "/",

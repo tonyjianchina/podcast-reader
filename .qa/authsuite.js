@@ -12,7 +12,7 @@
     "浏览器访问 http://127.0.0.1:8789/  (服务端设了 ET_TOKEN)",
   ], async () => {
     const t = document.title;
-    if (t !== "EnglishTool") throw new Error(`页面标题异常: ${t}`);
+    if (t !== "Podcast Reader") throw new Error(`页面标题异常: ${t}`);
     if (!$$("#list li").length) throw new Error("列表没有渲染出来(可能接口全部 401 了)");
     if (!/^\d+$/.test($("#ver").textContent.replace("r", ""))) throw new Error("版本号元素异常");
   });

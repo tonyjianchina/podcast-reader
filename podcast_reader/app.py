@@ -38,7 +38,7 @@ async def lifespan(app: FastAPI):
             task.cancel()
 
 
-app = FastAPI(title="EnglishTool", lifespan=lifespan)
+app = FastAPI(title="Podcast Reader", lifespan=lifespan)
 
 
 # 这些路径不校验 token:

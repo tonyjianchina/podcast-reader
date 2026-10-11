@@ -44,7 +44,9 @@
         $("#rateVal").textContent = rate.toFixed(2).replace(/0$/, "") + "×";
       }
       if ($("#autonext")) $("#autonext").checked = localStorage.getItem("et.autonext") === "1";
-      if ($("#autoscroll")) $("#autoscroll").checked = localStorage.getItem("et.autoscroll") === "1";
+      // 「跟随滚动」现在没有勾选框了: 它默认开, 状态挂在「定位」按钮的 .following 上。
+      // 重放启动时要把它同步回来, 否则刷新后按钮状态会留在旧值上。
+      if (window.__etSyncAutoScroll) window.__etSyncAutoScroll();
 
       // 3) hash -> 列表 or 正文(冷启动的真实分支)
       const hash = location.hash.slice(1);

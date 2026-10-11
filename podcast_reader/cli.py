@@ -57,7 +57,7 @@ def main(argv: list[str] | None = None) -> int:
 
         from .config import HOST, PORT
 
-        uvicorn.run("englishtool.app:app", host=HOST, port=PORT, log_level="info")
+        uvicorn.run("podcast_reader.app:app", host=HOST, port=PORT, log_level="info")
         return 0
 
     if args.cmd == "import":

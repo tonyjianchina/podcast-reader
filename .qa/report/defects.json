@@ -8,7 +8,7 @@
     "root": "app.py 的中间件只放行 /health,前端也完全没有 token 的概念(全文件搜不到 token 一词)。",
     "fix": "外壳与静态资源(/、manifest、icon)放行;首页把 token 注入页面;前端 api() 统一带上 Authorization,并支持 ?token= 手输一次后存本地、把地址栏里的 token 抹掉;认证方案大小写不敏感。",
     "verify": "K1–K6(6 条鉴权用例,独立实例 + 真 token)全绿",
-    "files": ["englishtool/app.py", "web/index.html"]
+    "files": ["podcast_reader/app.py", "web/index.html"]
   },
   {
     "id": "D-02",
@@ -74,7 +74,7 @@
     "root": "running 是一个启动时置 True、之后再不更新的布尔量;create_task 的异常没有任何人读。",
     "fix": "worker 任务挂 done-callback:异常时打印并清 running;/health 的 running 由任务真实状态推导,另有 worker_healthy 字段。",
     "verify": "I8 + 代码审查(用不可打开的 DB 路径复现过死掉的 worker)",
-    "files": ["englishtool/app.py", "englishtool/pipeline.py"]
+    "files": ["podcast_reader/app.py", "podcast_reader/pipeline.py"]
   },
   {
     "id": "D-08",
@@ -85,7 +85,7 @@
     "root": "SQLite 的 UNIQUE 认为 NULL 互不相等;episode_id/seg_idx 为 NULL 时 INSERT OR IGNORE 完全不去重,随后的 SELECT ... AND seg_idx IS ? 又命中了最早那行。",
     "fix": "改成\"按归一化键先查后插\",返回真正插入的那一行 id;接口层对 seg_idx / episode_id 做类型校验。",
     "verify": "后端回归(连续两次 POST 只留一行、返回同一个 id)",
-    "files": ["englishtool/db.py", "englishtool/app.py"]
+    "files": ["podcast_reader/db.py", "podcast_reader/app.py"]
   },
   {
     "id": "D-09",
@@ -96,7 +96,7 @@
     "root": "续跑逻辑对非 pending 状态调用了只认 pending 的原子抢占,于是一个都没抢到,却仍然打印了\"续跑 N 个\"。",
     "fix": "续跑前先把中间态回退成 pending,再抢占;日志改成\"实际续跑/总数\"。",
     "verify": "代码审查 + 状态机回归",
-    "files": ["englishtool/pipeline.py"]
+    "files": ["podcast_reader/pipeline.py"]
   },
   {
     "id": "D-10",
@@ -118,7 +118,7 @@
     "root": "has_translations() 只判断\"有没有一行\",而不是覆盖率。",
     "fix": "改为按覆盖率判断(≥95% 才算完成),补翻时已有句子不会重复花钱;接口返回已翻/总句数。",
     "verify": "代码审查 + /translate 回归(返回 translated/total)",
-    "files": ["englishtool/db.py", "englishtool/app.py"]
+    "files": ["podcast_reader/db.py", "podcast_reader/app.py"]
   },
   {
     "id": "D-12",
@@ -129,7 +129,7 @@
     "root": "define.py 直接 r.json()[\"choices\"]…;接口层只捕获 RuntimeError。",
     "fix": "把 HTTP 错误与解析错误都翻译成人话,接口返回 503。",
     "verify": "代码审查 + 6 种上游异常形态的进程内复现",
-    "files": ["englishtool/define.py", "englishtool/app.py"]
+    "files": ["podcast_reader/define.py", "podcast_reader/app.py"]
   },
   {
     "id": "D-13",
@@ -140,7 +140,7 @@
     "root": "处理函数直接对非字符串调 .strip();error 监听不区分\"真的加载失败\"与\"清空 src 时浏览器必发的补发事件\"。",
     "fix": "入参统一走类型校验(4xx);error 事件在无源/换源场景下忽略。",
     "verify": "后端回归(400/422)+ E9 回归",
-    "files": ["englishtool/app.py", "web/index.html"]
+    "files": ["podcast_reader/app.py", "web/index.html"]
   },
   {
     "id": "D-14",
@@ -151,6 +151,6 @@
     "root": "isolation_level=None + 分两条语句执行,且没有显式事务。",
     "fix": "先物化数据,再放进 BEGIN IMMEDIATE 事务里整体替换。",
     "verify": "代码审查(未做成自动化用例)",
-    "files": ["englishtool/db.py"]
+    "files": ["podcast_reader/db.py"]
   }
 ]

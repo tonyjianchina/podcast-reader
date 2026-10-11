@@ -1,4 +1,4 @@
-/* EnglishTool 场景化端到端测试套件(真实浏览器 · 无 mock)。
+/* Podcast Reader 场景化端到端测试套件(真实浏览器 · 无 mock)。
  *
  * 这段代码被 .qa/run.mjs 注入到真实页面里执行:
  *   window.__QA.setData({ base, expected, only })   // 只传可序列化的数据
@@ -647,14 +647,17 @@
     closePop();
   }, { timeout: 12000 });
 
-  T("B 阅读页", "B5", "工具栏控件齐全, 默认值符合设计(跟随滚动默认关)", [
+  T("B 阅读页", "B5", "工具栏控件齐全, 默认值符合设计(跟随滚动默认开)", [
     "进入正文 → 检查工具栏",
   ], async () => {
-    for (const sel of ["#rate", "#rateReset", "#fs", "#autonext", "#autoscroll", "#showZh", "#playBtn", "#loopBtn"])
+    for (const sel of ["#rate", "#rateReset", "#fs", "#autonext", "#showZh", "#playBtn", "#loopBtn", "#locateBtn"])
       assert($(sel), `缺少 ${sel}`);
     const r = parseFloat($("#rate").value);
     assert(r >= 0.5 && r <= 1.5, `语速初值异常 ${r}`);
-    eq($("#autoscroll").checked, false, "跟随滚动应默认关");
+    // 跟随滚动没有独立勾选框: 它默认开, 状态挂在「定位」按钮的 .following 上,
+    // 你自己滑屏就自动取消(见 index.html 的 maybeUnfollow)。
+    assert(!$("#autoscroll"), "跟随滚动勾选框应已移除(改为默认开 + 定位按钮承载状态)");
+    assert($("#locateBtn").classList.contains("following"), "默认应处于跟随中");
     eq($("#autonext").checked, false, "连播应默认关");
   });
 
@@ -825,7 +828,7 @@
   ], async () => {
     await openEpisode(S.data.expected.shortId);
     await setCheckbox("#autonext", true);
-    eq($("#autoscroll").checked, true, "勾连播应自动打开跟随滚动");
+    assert($("#locateBtn").classList.contains("following"), "勾连播应自动打开跟随滚动");
     await playSentence(1);
     await waitFor(() => state().cur !== "1" && +state().cur > 1, { timeout: 9000, desc: "高亮推进" });
     const s = state();

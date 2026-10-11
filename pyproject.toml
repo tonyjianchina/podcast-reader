@@ -1,5 +1,5 @@
 [project]
-name = "englishtool"
+name = "podcast_reader"
 version = "0.1.0"
 description = "把播客单集变成可精读、可标注、可查词的文章的私人阅读器"
 readme = "README.md"
@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [project.scripts]
-et = "englishtool.cli:main"
+et = "podcast_reader.cli:main"
 
 
 [build-system]
@@ -26,4 +26,4 @@ build-backend = "hatchling.build"
 package = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["englishtool"]
+packages = ["podcast_reader"]
