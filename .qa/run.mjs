@@ -12,6 +12,7 @@
 
 const fs = await import("node:fs/promises");
 const path = await import("node:path");
+const { fileURLToPath } = await import("node:url");
 
 // ego-browser 的脚本进程只继承极少的环境变量(QA_* 全部看不到), 所以配置走命令行参数 + 配置文件:
 //   ego-browser nodejs < .qa/run.mjs -- --page=p4 --phases=offline --only=B3
@@ -22,7 +23,7 @@ const path = await import("node:path");
 // 例外: 脚本经 stdin 喂给 `ego-browser nodejs` 时, import.meta.url 不是真实文件路径
 // (形如 file:////[eval2]), 这里会退化成 "/", 于是变成去读 /.qa/suite.js。
 // 那种情况下用 `--root=/绝对/路径` 或环境变量 ET_QA_ROOT 指定项目根。
-const SCRIPT_ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
+const SCRIPT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 // --root / ET_QA_ROOT 二选一即可(ego 的运行时会把环境变量清掉, 所以命令行参数更可靠)
 const ROOT_ARG = /--root=([^\s]+)/.exec(process.argv.slice(1).join(" "));
 const ROOT = ROOT_ARG

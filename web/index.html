@@ -20,7 +20,7 @@
     --ok:#34785b; --danger:#b64038; --shadow:0 18px 50px rgba(49,42,31,.10);
     --font-ui:"Avenir Next","PingFang SC","Helvetica Neue",sans-serif;
     --font-read:Charter,"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
-    --fs:20px; --reader-leading:1.88;
+    --fs:20px; --reader-leading:1.8;
     --safe-bottom:env(safe-area-inset-bottom,0px);
   }
   @media (prefers-color-scheme:dark){
@@ -180,6 +180,7 @@
   #barVolume{width:74px;accent-color:var(--accent)}
   #playerSettingsBtn{width:42px;padding:0!important}.mobile-only{display:none!important}
   #learningToggle{color:var(--accent-ink)!important;background:var(--cur)!important;border-color:transparent!important;font-weight:700}
+  #bar:not(.learning-open) #learningToggle{display:inline-flex!important}
   #learningPanel{display:none;min-height:54px;border-top:1px solid var(--line);padding:7px 24px 8px;align-items:center;gap:12px}
   #bar.learning-open #learningPanel{display:flex}
   .learning-title{display:flex;align-items:center;gap:9px;min-width:124px;font-weight:750;font-size:13px}.learning-title svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8}
@@ -207,7 +208,7 @@
     .topbar-inner{padding-left:112px}.app-main{padding-left:96px}
     #appNav{top:84px;bottom:auto;left:18px;right:auto;width:64px;height:auto;padding:8px 6px;display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);border-radius:20px;background:var(--surface);box-shadow:var(--shadow)}
     .nav-item{height:58px;flex:0 0 auto}.nav-item.active::before{left:-7px;top:18px;width:3px;height:22px}.nav-item svg{width:21px;height:21px}
-    #bar{left:96px;bottom:0}body.hasPlayer #settingsBtn{display:none}#bar:not(.learning-open) #learningToggle{display:inline-flex!important}
+    #bar{left:96px;bottom:0}body.hasPlayer #settingsBtn{display:none}
   }
   @media (max-width:760px){
     .topbar{height:60px}.topbar-inner{padding:0 12px;gap:9px}.brand-mark{width:31px;height:31px;border-radius:9px}.brand-copy b{font-size:13px}.brand-copy small{display:none}
@@ -261,7 +262,7 @@
     </button>
     <div class="topbar-state">
       <span class="status" id="status">就绪</span>
-      <span id="ver" title="界面版本。改了 web/index.html 就把它加一, 用来确认浏览器加载的不是旧缓存">r18</span>
+      <span id="ver" title="界面版本。改了 web/index.html 就把它加一, 用来确认浏览器加载的不是旧缓存">r19</span>
       <button id="settingsBtn" class="icon-button" aria-label="打开阅读设置" title="阅读设置">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.42 1.42-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V20h-2v-.48A1.7 1.7 0 0 0 12.38 18a1.7 1.7 0 0 0-1.88.34l-.06.06-1.42-1.42.06-.06A1.7 1.7 0 0 0 9.42 15a1.7 1.7 0 0 0-1.56-1.03H7.4v-2h.46A1.7 1.7 0 0 0 9.42 11a1.7 1.7 0 0 0-.34-1.88l-.06-.06 1.42-1.42.06.06a1.7 1.7 0 0 0 1.88.34A1.7 1.7 0 0 0 13.41 6.5V6h2v.5a1.7 1.7 0 0 0 1.03 1.54 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.42 1.42-.06.06A1.7 1.7 0 0 0 19.4 11a1.7 1.7 0 0 0 1.56 1.03h.44v2h-.44A1.7 1.7 0 0 0 19.4 15Z"/></svg>
       </button>
@@ -337,11 +338,11 @@
   </div>
   <div class="setting-row">
     <div class="setting-copy"><b>正文字号</b><span>同时应用到电脑和手机。</span></div>
-    <div class="setting-control"><input type="range" id="fs" min="15" max="26" value="20"><output id="fsVal">20</output></div>
+    <div class="setting-control"><input type="range" id="fs" min="16" max="24" value="20"><output id="fsVal">20</output></div>
   </div>
   <div class="setting-row">
     <div class="setting-copy"><b>正文行距</b><span>紧凑适合扫读，宽松适合精读。</span></div>
-    <div class="setting-control"><input type="range" id="leading" min="1.55" max="2.1" step="0.05" value="1.88"><output id="leadingVal">1.88</output></div>
+    <div class="setting-control"><input type="range" id="leading" min="1.55" max="2.1" step="0.05" value="1.8"><output id="leadingVal">1.80</output></div>
   </div>
   <div class="setting-row">
     <div class="setting-copy"><b>外观</b><span>可跟随系统，也可固定明亮或深色。</span></div>
@@ -527,6 +528,9 @@ async function openEpisode(id, push){
     return;
   }
   current = data.episode; segments = data.segments; vocab = new Set(data.vocab_lemmas);
+  // 学习面板属于「正在播放」的单集。如果声音仍是 A、用户打开了 B，
+  // 先收起面板，避免标题显示 A，定位/中译却操作 B。再点「学习」会回到 A。
+  if(playing.id && playing.id !== current.id) closeLearning();
   zhMap = new Map((data.translations||[]).map(t => [t.seg_idx, t.text]));
   zhReady = zhMap.size > 0;
   $('#list').style.display='none'; $('#vocab').style.display='none'; $('#reader').style.display='block'; $('#back').style.display='';
@@ -650,6 +654,11 @@ function syncZhToggle(){
   box.checked = showZh;
 }
 $('#showZh').onchange = async e => {
+  if(!current || current.id !== playing.id){
+    e.target.checked = false;
+    await openFull();
+    return;
+  }
   showZh = e.target.checked;
   localStorage.setItem('et.showzh', showZh ? '1' : '0');
 
@@ -675,7 +684,6 @@ function pollTranslations(id){
         clearInterval(t);
         zhMap = new Map(d.translations.map(x => [x.seg_idx, x.text]));
         zhReady = true;
-        // 就地补上中译, 不重排已经渲染好的文章
         // 就地补上中译, 不重排已经渲染好的文章
         $('#article').querySelectorAll('.s').forEach(sp => {
           const zh = zhMap.get(+sp.dataset.i);
@@ -733,10 +741,6 @@ let volume = (() => {
   return isFinite(v) ? Math.max(0, Math.min(1, v)) : 1;
 })();
 let autoNext = localStorage.getItem('et.autonext') === '1';
-// 跟随滚动默认关。这是「读为主」的必然结论:
-// 每句都滚一次 = 每分钟约 20 次平滑滚动, 页面永远在你脚下移动,
-// 你低头看一个词, 高亮句就被推出屏幕了(实测反馈: "自动划到底部, 标识也消失")。
-// 需要躺着连续听的时候再自己打开。
 // 跟随滚动**默认开**: 点开始阅读就该自动跟着读下去。
 // 你一旦自己滑屏超过阈值(见 maybeUnfollow), 它自动关掉, 不再和你抢屏幕。
 let autoScroll = localStorage.getItem('et.autoscroll') !== '0';
@@ -808,6 +812,7 @@ function refreshStatusLine(){
   $('#status').textContent = (audio && !audio.paused) ? followStatus('播放中') : followStatus('已暂停');
 }
 function locateCurrent(){
+  if(!current || current.id !== playing.id){ openFull(); return }
   const idx = curIdx >= 0 ? curIdx : readingAnchorIdx();
   if(idx === null || idx < 0) return;
   autoScroll = true;                      // 定位 = 重新开始跟随
@@ -875,13 +880,16 @@ function setLearningOpen(open, persist){
   syncViewChrome();
 }
 function showPlayer(){
+  const wasOn = $('#bar').classList.contains('on');
   document.body.classList.add('hasPlayer');
   $('#bar').classList.add('on');
+  // 已经展开的手机学习面板不应因「首次播放」重新加载音频而自动收起。
+  if(wasOn){ syncViewChrome(); return }
   const desktopOpen = localStorage.getItem('et.learning.open') !== '0';
   setLearningOpen(compactPlayer() ? false : desktopOpen, false);
 }
 function closeLearning(){ setLearningOpen(false) }
-$('#learningToggle').onclick = () => setLearningOpen(true);
+$('#learningToggle').onclick = () => openFull();
 $('#learningClose').onclick = closeLearning;
 $('#playerScrim').onclick = closeLearning;
 addEventListener('resize', () => {
@@ -1259,7 +1267,14 @@ function syncPlayerUI(){
 function syncPlayBtn(){ syncPlayerUI() }
 
 // 保留这两个语义化入口，旧的「全屏播放器」已经改成与底部播放器相连的学习面板。
-function openFull(){ setLearningOpen(true); syncPlayerUI() }
+async function openFull(){
+  if(!playing.id) return;
+  // 学习控件与播放器指向同一集；从列表/生词本/另一集打开时，先回到播放中的正文。
+  if(!current || current.id !== playing.id) await openEpisode(playing.id, true);
+  if(!current || current.id !== playing.id) return;
+  setLearningOpen(true);
+  syncPlayerUI();
+}
 function closeFull(){ closeLearning() }
 
 function setHighlight(i){
@@ -1690,19 +1705,21 @@ function jumpToWord(it){
 
 // 阅读外观统一放到设置页，并在电脑/手机间共用同一份本地偏好。
 function applyFontSize(px){
-  document.documentElement.style.setProperty('--fs', px + 'px');
-  const el = $('#fs'); if(el) el.value = px;
-  const out = $('#fsVal'); if(out) out.value = px + 'px';
+  const n = Math.max(16, Math.min(24, parseFloat(px) || 20));
+  document.documentElement.style.setProperty('--fs', n + 'px');
+  const el = $('#fs'); if(el) el.value = n;
+  const out = $('#fsVal'); if(out) out.value = n + 'px';
+  return n;
 }
 $('#fs').oninput = e => {
-  applyFontSize(e.target.value);
-  try{ localStorage.setItem('et.fs', String(e.target.value)) }catch(err){}
+  const n = applyFontSize(e.target.value);
+  try{ localStorage.setItem('et.fs', String(n)) }catch(err){}
 };
 const savedFs = (() => { try{ return parseFloat(localStorage.getItem('et.fs')) }catch(e){ return NaN } })();
-applyFontSize(savedFs >= 15 && savedFs <= 26 ? savedFs : 20);
+applyFontSize(savedFs >= 16 && savedFs <= 24 ? savedFs : 20);
 
 function applyLeading(v){
-  const n = Math.max(1.55, Math.min(2.1, parseFloat(v) || 1.88));
+  const n = Math.max(1.55, Math.min(2.1, parseFloat(v) || 1.8));
   document.documentElement.style.setProperty('--reader-leading', String(n));
   $('#leading').value = n;
   $('#leadingVal').value = n.toFixed(2);
@@ -1712,7 +1729,7 @@ $('#leading').oninput = e => {
   try{ localStorage.setItem('et.leading', String(e.target.value)) }catch(err){}
 };
 const savedLeading = (() => { try{ return parseFloat(localStorage.getItem('et.leading')) }catch(e){ return NaN } })();
-applyLeading(savedLeading >= 1.55 && savedLeading <= 2.1 ? savedLeading : 1.88);
+applyLeading(savedLeading >= 1.55 && savedLeading <= 2.1 ? savedLeading : 1.8);
 
 function applyTheme(value){
   const theme = ['light','dark'].includes(value) ? value : 'system';
