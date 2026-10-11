@@ -280,7 +280,7 @@
   <input id="url" placeholder="粘贴播客分享链接 / RSS 地址 / YouTube 链接">
   <button class="primary" id="go">导入</button>
   <span class="status" id="status">就绪</span>
-  <span id="ver" title="界面版本。改了 web/index.html 就把它加一, 用来确认浏览器加载的不是旧缓存">r15</span>
+  <span id="ver" title="界面版本。改了 web/index.html 就把它加一, 用来确认浏览器加载的不是旧缓存">r16</span>
 </header>
 
 <div class="wrap">
@@ -291,8 +291,9 @@
     <div class="toolbar">
       <span id="epMeta"></span>
       <span style="flex:1"></span>
-      <label id="rateCtl" title="朗读速度">语速 <input type="range" id="rate" min="0.5" max="1.5" step="0.05" value="0.75"><b id="rateVal">0.75×</b></label>
-      <button id="rateReset" title="恢复 1.0 倍">1.0×</button>
+      <label id="rateCtl" title="朗读速度">语速 <input type="range" id="rate" min="0.5" max="2" step="0.25" value="1" list="rateSteps"><b id="rateVal">1×</b></label>
+      <datalist id="rateSteps"><option value="0.5"></option><option value="0.75"></option><option value="1"></option><option value="1.25"></option><option value="1.5"></option><option value="2"></option></datalist>
+      <button id="rateReset" title="回到 1 倍速">1×</button>
       <label id="fsCtl">字号 <input type="range" id="fs" min="15" max="26" value="19"></label>
       <label title="当前句播完后是否继续下一句"><input type="checkbox" id="autonext"> 连播</label>
       <label title="在每句英文下面显示中文翻译"><input type="checkbox" id="showZh"> 中译</label>
@@ -664,7 +665,27 @@ function markWords(text, segIdx){
 // ---------- 播放 ----------
 // 语速默认 0.75 倍: 英文播客原速对本项目的用途(核听 + 精读)偏快, 慢放更容易跟上。
 // 设置存 localStorage, 不用每次重调。
-let rate = parseFloat(localStorage.getItem('et.rate') || '0.75');
+// 语速档位: 0.5 / 0.75 / 1 / 1.25 / 1.5 / 2
+// 滑块(step=0.25)和全屏那个循环按钮共用这一份, 免得两处各写一套、日后改出不一致。
+const RATE_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 2];
+/** 把任意值吸附到最近的档位 —— 旧版本存过 0.6/0.9 这类值, 要能落到合法档上。 */
+function snapRate(v){
+  const n = parseFloat(v);
+  if(!isFinite(n)) return 1;
+  let best = RATE_STEPS[0], bestD = Infinity;
+  for(const r of RATE_STEPS){ const d = Math.abs(r - n); if(d < bestD){ bestD = d; best = r } }
+  return best;
+}
+function setRate(v, persist){
+  rate = snapRate(v);
+  if(persist !== false) localStorage.setItem('et.rate', String(rate));
+  applyRate();
+}
+
+// 初始化时就把值吸附并写回: 否则 localStorage 里会一直留着 0.6 / 0.9 这类
+// 旧版本存下的非法档位, 虽然显示和播放都正常, 但下次读出来还要再纠正一遍。
+let rate = snapRate(localStorage.getItem('et.rate') || '1');
+try { localStorage.setItem('et.rate', String(rate)) } catch(e){}
 let autoNext = localStorage.getItem('et.autonext') === '1';
 // 跟随滚动默认关。这是「读为主」的必然结论:
 // 每句都滚一次 = 每分钟约 20 次平滑滚动, 页面永远在你脚下移动,
@@ -682,9 +703,8 @@ function applyRate(){
   $('#rate').value = rate; $('#rateVal').textContent = lbl;
   const f = $('#fullRateVal'); if(f) f.textContent = lbl;
 }
-$('#rate').oninput = e => { rate = parseFloat(e.target.value);
-  localStorage.setItem('et.rate', String(rate)); applyRate(); };
-$('#rateReset').onclick = () => { rate = 1.0; localStorage.setItem('et.rate','1'); applyRate(); };
+$('#rate').oninput = e => setRate(e.target.value);
+$('#rateReset').onclick = () => setRate(1);
 $('#autonext').checked = autoNext;
 $('#autonext').onchange = e => {
   autoNext = e.target.checked;
@@ -795,12 +815,9 @@ $('#fullPlay').onclick = togglePlay;
 $('#fullBack15').onclick = () => skip(-15);
 $('#fullFwd30').onclick = () => skip(30);
 $('#fullRate').onclick = () => {
-  // 0.5 → 0.6 → 0.75 → 0.9 → 1.0 → 1.25 → 1.5 → 回到 0.5
-  const ladder = [0.5, 0.6, 0.75, 0.9, 1.0, 1.25, 1.5];
-  const i = ladder.findIndex(v => Math.abs(v - rate) < 0.001);
-  rate = ladder[(i + 1) % ladder.length];
-  localStorage.setItem('et.rate', String(rate));
-  applyRate();
+  // 按 RATE_STEPS 循环: 0.5 → 0.75 → 1 → 1.25 → 1.5 → 2 → 回到 0.5
+  const i = RATE_STEPS.findIndex(v => Math.abs(v - rate) < 0.001);
+  setRate(RATE_STEPS[(i + 1) % RATE_STEPS.length]);
 };
 $('#fullToEp').onclick = () => {
   if(!playing.id) return;
