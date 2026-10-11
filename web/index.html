@@ -20,6 +20,7 @@
     --ok:#34785b; --danger:#b64038; --shadow:0 18px 50px rgba(49,42,31,.10);
     --font-ui:"Avenir Next","PingFang SC","Helvetica Neue",sans-serif;
     --font-read:Charter,"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    --fs:20px; --reader-leading:1.88;
     --safe-bottom:env(safe-area-inset-bottom,0px);
   }
   @media (prefers-color-scheme:dark){
@@ -27,6 +28,12 @@
       --muted:#aaa69b;--line:#3c433f;--accent:#ff745d;--accent-ink:#ffd8cf;--mark:#635a20;
       --cur:#3b2925;--night:#0d100f;--night-2:#252b28;--shadow:0 22px 60px rgba(0,0,0,.34)}
   }
+  html[data-theme="light"]{color-scheme:light;--bg:#f3efe6;--surface:#fffdf7;--surface-2:#ebe5d8;--ink:#171815;
+    --muted:#747267;--line:#d9d2c4;--accent:#f05d45;--accent-ink:#8f2417;--mark:#fff09c;
+    --cur:#ffe7dc;--night:#1c211f;--night-2:#29302c;--shadow:0 18px 50px rgba(49,42,31,.10)}
+  html[data-theme="dark"]{color-scheme:dark;--bg:#151916;--surface:#1d221f;--surface-2:#282e2a;--ink:#f2eee5;
+    --muted:#aaa69b;--line:#3c433f;--accent:#ff745d;--accent-ink:#ffd8cf;--mark:#635a20;
+    --cur:#3b2925;--night:#0d100f;--night-2:#252b28;--shadow:0 22px 60px rgba(0,0,0,.34)}
   *{box-sizing:border-box}
   html{background:var(--bg);scroll-behavior:smooth}
   body{margin:0;min-height:100vh;background:
@@ -52,9 +59,12 @@
   .topbar-state{margin-left:auto;display:flex;align-items:center;gap:8px;min-width:0}
   .status{max-width:min(38vw,320px);font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #ver{font-size:10px;color:var(--muted);opacity:.62;border:1px solid var(--line);border-radius:99px;padding:2px 7px}
+  .icon-button{width:40px;height:40px;padding:0;border:1px solid var(--line);border-radius:13px;background:var(--surface);display:grid;place-items:center;color:var(--ink)}
+  .icon-button svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
   .app-shell{min-height:calc(100vh - 68px)}
   .app-main{min-width:0}
-  .wrap{max-width:900px;margin:0 auto;padding:34px 28px 55vh}
+  .wrap{max-width:900px;margin:0 auto;padding:34px 28px 86px}
+  body.hasPlayer .wrap{padding-bottom:190px}
 
   /* Fixed app navigation: bottom tabs on phone, rail on desktop */
   #appNav{position:fixed;left:0;right:0;bottom:0;z-index:45;height:calc(66px + var(--safe-bottom));padding:5px 12px var(--safe-bottom);
@@ -107,18 +117,12 @@
   /* Reader */
   #reader{max-width:780px;margin:0 auto}
   .reader-head{margin:3px 0 18px;padding:0 2px}
-  h2.ep{font:600 clamp(27px,5vw,42px)/1.12 var(--font-read);letter-spacing:-.025em;margin:9px 0 8px}
+  h2.ep{font:600 clamp(27px,4vw,42px)/1.12 var(--font-read);letter-spacing:-.025em;margin:9px 0 8px;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   #epMeta{display:block;color:var(--muted);font-size:12px;line-height:1.5}
-  .toolbar{position:sticky;top:79px;z-index:20;margin:0 -12px 28px;padding:10px 12px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;
-    border:1px solid color-mix(in srgb,var(--line) 82%,transparent);border-radius:18px;background:color-mix(in srgb,var(--surface) 88%,transparent);
-    backdrop-filter:blur(18px) saturate(150%);-webkit-backdrop-filter:blur(18px) saturate(150%);box-shadow:0 8px 30px rgba(45,38,28,.07);font-size:12px;color:var(--muted)}
-  .toolbar button,.toolbar label{min-height:36px;border:1px solid var(--line);border-radius:11px;background:var(--surface);display:flex;align-items:center;gap:6px;padding:7px 10px;white-space:nowrap}
-  .toolbar button{color:var(--ink)}.toolbar label{cursor:pointer}.toolbar input[type="checkbox"]{accent-color:var(--accent)}
-  .toolbar input[type="range"]{accent-color:var(--accent);width:82px}.toolbar .grow{flex:1}.toolbar #epMeta{display:none}
-  #playBtn{background:var(--night);color:#fff;border-color:var(--night)}
   #locateBtn.following{background:var(--accent);border-color:var(--accent);color:#fff}
   #locateBtn.attention{border-color:var(--accent);color:var(--accent)}
-  article{font-family:var(--font-read);font-size:var(--fs,20px);line-height:1.88;letter-spacing:.002em;background:var(--surface);
+  article{font-family:var(--font-read);font-size:var(--fs);line-height:var(--reader-leading);letter-spacing:.002em;background:var(--surface);
     border:1px solid var(--line);border-radius:26px;padding:clamp(26px,6vw,58px);box-shadow:0 20px 55px rgba(50,42,29,.055)}
   article p{margin:0 0 1.52em}article p:last-child{margin-bottom:0}
   article .s{cursor:pointer;border-radius:5px;padding:2px 1px;transition:background .14s,box-shadow .14s}
@@ -128,7 +132,7 @@
   article .w{cursor:pointer;border-radius:3px;padding:0 1px}article .w:hover{background:var(--mark)}
   article .w.marked{background:linear-gradient(transparent 53%,var(--mark) 53%);box-shadow:inset 0 -1px 0 color-mix(in srgb,var(--accent) 70%,transparent)}
   article .zh{display:none;font-family:var(--font-ui);font-size:.66em;line-height:1.65;color:var(--muted);margin-top:.12em;pointer-events:none}
-  body.show-zh article .zh{display:block}body.show-zh article{line-height:1.72}
+  body.show-zh article .zh{display:block}body.show-zh article{line-height:max(1.62,calc(var(--reader-leading) - .14))}
   body.show-zh article .s{display:inline-block;width:100%;margin-bottom:.6em;vertical-align:top}
 
   /* Vocabulary */
@@ -151,55 +155,98 @@
   dialog ul{margin:6px 0;padding-left:20px}dialog menu{display:flex;gap:8px;justify-content:flex-end;margin:20px 0 0;padding:0}
   dialog menu button{border:1px solid var(--line);background:var(--surface);padding:10px 14px;border-radius:11px}#pMark{background:var(--night);color:#fff;border-color:var(--night)}
 
-  /* Persistent player: floats above app navigation */
-  #bar{position:fixed;left:12px;right:12px;bottom:calc(72px + var(--safe-bottom));z-index:44;display:none;max-width:680px;margin:auto;overflow:hidden;
-    border:1px solid #ffffff1c;border-radius:18px;background:color-mix(in srgb,var(--night) 94%,transparent);color:#f8f3e9;box-shadow:0 18px 48px #0005;cursor:pointer;
-    backdrop-filter:blur(18px) saturate(150%);-webkit-backdrop-filter:blur(18px) saturate(150%);animation:playerIn .28s ease-out}
+  /* One responsive player: desktop dock, mobile mini-player / attached bottom sheet */
+  #playerScrim{position:fixed;inset:0;z-index:68;display:none;background:rgba(20,21,18,.48);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+  body.player-sheet-open{overflow:hidden}
+  #bar{position:fixed;left:0;right:0;bottom:calc(66px + var(--safe-bottom));z-index:60;display:none;overflow:hidden;border:1px solid var(--line);border-width:1px 0 0;
+    border-radius:22px 0 0;background:color-mix(in srgb,var(--surface) 94%,transparent);color:var(--ink);box-shadow:0 -14px 42px rgba(44,38,29,.12);
+    backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);animation:playerIn .26s ease-out}
   #bar.on{display:block}@keyframes playerIn{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
-  #barTrack{height:3px;background:#ffffff1c}#barFill{height:3px;background:var(--accent);width:0;transition:width .2s linear;position:relative;z-index:1;margin-bottom:-3px}
-  #barInner{display:flex;align-items:center;gap:11px;padding:10px 11px}#barCover{width:44px;height:44px;border-radius:12px;flex:0 0 auto;background:var(--night-2);display:grid;place-items:center;overflow:hidden}
-  #barCover img,#fullArt img{width:100%;height:100%;object-fit:cover;display:block}#barText{flex:1;min-width:0}#barTitle{font-size:13px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  #barSub{font-size:10.5px;color:#b8b7b0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}#bar button{width:38px;height:38px;padding:0;border-radius:50%;border:1px solid #ffffff26;background:#ffffff10;color:#fff;font-size:16px}
+  #barTrack{height:4px;background:color-mix(in srgb,var(--line) 58%,transparent);cursor:pointer;position:relative;touch-action:none}
+  #barFill{position:absolute;inset:0 auto 0 0;background:var(--accent);width:0;transition:width .15s linear}
+  #barInner{min-height:76px;display:grid;grid-template-columns:minmax(220px,1fr) auto auto;align-items:center;gap:18px;padding:10px 24px}
+  .player-identity{display:flex;align-items:center;gap:12px;min-width:0}
+  #barCover{width:48px;height:48px;border-radius:11px;flex:0 0 auto;background:var(--night-2);color:#fff;display:grid;place-items:center;overflow:hidden}
+  #barCover img{width:100%;height:100%;object-fit:cover;display:block}
+  #barText{min-width:0;max-width:460px}#barTitle{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #barSub{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px;font-variant-numeric:tabular-nums}
+  .player-transport{display:flex;align-items:center;justify-content:center;gap:8px}
+  #bar button{min-width:42px;height:42px;padding:0 12px;border:1px solid var(--line);border-radius:13px;background:var(--surface);color:var(--ink);font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+  #bar .skip-button{border-color:transparent;background:transparent;font-weight:650;font-size:12px}
+  #barPlay{width:54px!important;height:54px!important;min-width:54px!important;padding-left:15px!important;border-radius:50%!important;background:var(--night)!important;border-color:var(--night)!important;color:#fff!important;font-size:19px!important}
+  #barPlay.is-playing{padding-left:12px!important}
+  .player-tools{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0}
+  #rateCtl{font-weight:750;min-width:68px!important}.volume-wrap{display:flex;align-items:center;gap:7px;padding:0 6px;color:var(--muted)}
+  #barVolume{width:74px;accent-color:var(--accent)}
+  #playerSettingsBtn{width:42px;padding:0!important}.mobile-only{display:none!important}
+  #learningToggle{color:var(--accent-ink)!important;background:var(--cur)!important;border-color:transparent!important;font-weight:700}
+  #learningPanel{display:none;min-height:54px;border-top:1px solid var(--line);padding:7px 24px 8px;align-items:center;gap:12px}
+  #bar.learning-open #learningPanel{display:flex}
+  .learning-title{display:flex;align-items:center;gap:9px;min-width:124px;font-weight:750;font-size:13px}.learning-title svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8}
+  .learning-actions{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+  .mobile-rate-row{display:none!important}
+  #learningPanel button{height:40px;min-width:0;border-radius:12px;padding:0 14px}
+  .switch-control{height:40px;display:flex;align-items:center;gap:9px;padding:0 12px;border-left:1px solid var(--line);font-size:12px;white-space:nowrap;cursor:pointer}
+  .switch-control input{position:absolute;opacity:0;pointer-events:none}
+  .switch-track{width:36px;height:22px;padding:2px;border-radius:99px;background:var(--line);transition:background .18s;display:flex;align-items:center}
+  .switch-track::after{content:"";width:18px;height:18px;border-radius:50%;background:var(--surface);box-shadow:0 2px 6px rgba(0,0,0,.18);transition:transform .18s}
+  .switch-control input:checked + .switch-track{background:var(--accent)}.switch-control input:checked + .switch-track::after{transform:translateX(14px)}
+  #learningClose{margin-left:auto;border-color:transparent!important;background:transparent!important;color:var(--muted)!important}
+  #barClose,#rateReset{display:none!important}
 
-  /* Full player */
-  #full{position:fixed;inset:0;z-index:70;display:none;flex-direction:column;background:
-    radial-gradient(circle at 50% 22%,color-mix(in srgb,var(--accent) 22%,transparent),transparent 35%),var(--night);
-    color:#f8f3e9;padding:calc(14px + env(safe-area-inset-top,0px)) 24px calc(24px + var(--safe-bottom))}
-  #full.on{display:flex;animation:fullIn .3s cubic-bezier(.2,.8,.2,1)}@keyframes fullIn{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
-  #fullTop{display:flex;align-items:center;gap:12px;font-size:11px;color:#b8b7b0;letter-spacing:.08em;text-transform:uppercase;max-width:520px;width:100%;margin:0 auto}
-  #fullTop button{font-size:16px;padding:9px 12px;border:1px solid #ffffff1c;border-radius:99px;background:#ffffff0e;color:#fff}
-  #fullArt{width:min(72vw,370px);max-height:45vh;aspect-ratio:1;border-radius:28px;margin:auto auto 0;flex:0 1 auto;background:var(--night-2);display:grid;place-items:center;font-size:62px;box-shadow:0 30px 80px #0008;overflow:hidden;position:relative}
-  #fullArt::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px #ffffff1e;pointer-events:none}
-  #fullTitle,#fullSub,#fullSpacer,#fullTimes,#fullBar,#fullCtl,#fullNote{max-width:520px;width:100%;margin-left:auto;margin-right:auto}
-  #fullTitle{font:600 24px/1.25 var(--font-read);letter-spacing:-.015em;margin-top:27px;max-height:2.5em;overflow:hidden}#fullSub{font-size:12px;color:#aaa9a2;margin-top:7px}
-  #fullSpacer{flex:1 1 auto;min-height:18px;max-height:90px}#fullTimes{display:flex;justify-content:space-between;font-size:10px;color:#aaa9a2;font-variant-numeric:tabular-nums}
-  #fullBar{height:5px;background:#ffffff22;border-radius:99px;margin-top:9px;position:relative;cursor:pointer}#fullBarFill{height:5px;background:var(--accent);border-radius:99px;width:0}
-  #fullBarKnob{position:absolute;top:50%;width:15px;height:15px;border-radius:50%;background:#fff;border:4px solid var(--accent);transform:translate(-50%,-50%);left:0}
-  #fullCtl{display:flex;align-items:center;justify-content:space-around;gap:6px;margin-top:24px}#fullCtl button{border:0;background:none;color:#fff;display:flex;flex-direction:column;align-items:center;gap:5px;padding:7px 10px}
-  #fullCtl .big{font-size:29px}#fullCtl .lbl{font-size:9px;color:#aaa9a2;text-transform:uppercase;letter-spacing:.08em}#fullPlay{width:68px;height:68px;border-radius:50%!important;background:var(--accent)!important;font-size:24px!important;display:grid!important;place-items:center!important}
-  #fullNote{font-size:10px;color:#777d79;text-align:center;margin-top:auto;padding-top:15px}
+  /* Global reading settings */
+  #settings{max-width:460px}.settings-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:22px}.settings-head h3{margin:0}.settings-head p{margin:5px 0 0;color:var(--muted);font-size:12px}
+  #settingsClose{margin-left:auto;width:40px;height:40px;padding:0;border-radius:50%;font-size:20px}
+  .setting-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px;align-items:center;padding:16px 0;border-top:1px solid var(--line)}
+  .setting-copy b{display:block;font-size:14px}.setting-copy span{display:block;margin-top:4px;color:var(--muted);font-size:11px}
+  .setting-control{display:flex;align-items:center;gap:10px}.setting-control output{min-width:38px;color:var(--muted);font-size:12px;text-align:right}
+  .setting-control input[type="range"]{width:132px;accent-color:var(--accent)}.setting-control select{min-width:118px;border:1px solid var(--line);background:var(--surface);border-radius:11px;padding:9px 10px}
   .hint{font-size:12px;color:var(--muted);margin-top:8px}a{color:var(--accent-ink)}
 
   @media (min-width:980px){
     .topbar-inner{padding-left:112px}.app-main{padding-left:96px}
     #appNav{top:84px;bottom:auto;left:18px;right:auto;width:64px;height:auto;padding:8px 6px;display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);border-radius:20px;background:var(--surface);box-shadow:var(--shadow)}
     .nav-item{height:58px;flex:0 0 auto}.nav-item.active::before{left:-7px;top:18px;width:3px;height:22px}.nav-item svg{width:21px;height:21px}
-    #bar{bottom:20px;left:108px}.wrap{padding-bottom:48vh}
+    #bar{left:96px;bottom:0}body.hasPlayer #settingsBtn{display:none}#bar:not(.learning-open) #learningToggle{display:inline-flex!important}
   }
   @media (max-width:760px){
-    .topbar{height:60px}.topbar-inner{padding:0 14px;gap:9px}.brand-mark{width:31px;height:31px;border-radius:9px}.brand-copy b{font-size:13px}.brand-copy small{display:none}
-    .status{font-size:10.5px;max-width:28vw}#ver{display:none}.app-shell{min-height:calc(100vh - 60px)}
+    .topbar{height:60px}.topbar-inner{padding:0 12px;gap:9px}.brand-mark{width:31px;height:31px;border-radius:9px}.brand-copy b{font-size:13px}.brand-copy small{display:none}
+    .status{display:none}#ver{display:none}.topbar-state{gap:5px}.icon-button{width:38px;height:38px}.app-shell{min-height:calc(100vh - 60px)}
     #homeHero{padding:16px 12px 0}.hero-card{min-height:0;border-radius:23px;padding:25px 20px 22px}.hero-card::before{width:210px;height:210px;right:-90px;top:-115px;border-width:42px}.hero-card::after{display:none}
     .hero-card h2{font-size:30px;max-width:290px}.hero-card p{font-size:12px;max-width:300px;padding-right:22px}.import-box{margin-top:22px;padding:5px;gap:5px}.import-box #url{font-size:13px;padding:12px}.import-box #go{padding:0 15px}
-    .wrap{padding:27px 14px 55vh}.screen-heading{margin-bottom:14px;padding:0 3px}.screen-heading h2{font-size:24px}
+    .wrap{padding:27px 14px calc(90px + var(--safe-bottom))}.screen-heading{margin-bottom:14px;padding:0 3px}.screen-heading h2{font-size:24px}
+    body.hasPlayer .wrap{padding-bottom:calc(166px + var(--safe-bottom))}
     ul.eps{grid-template-columns:1fr;gap:10px}ul.eps li{min-height:108px;grid-template-columns:70px minmax(0,1fr) 24px;padding:12px;border-radius:18px;gap:12px}.episode-cover{width:70px;border-radius:13px}.t{font-size:14px}.badge{font-size:9px;padding:3px 7px}.episode-open{width:24px;height:24px}
-    .reader-head{padding:0 4px;margin-bottom:14px}h2.ep{font-size:29px}.toolbar{top:67px;margin:0 -4px 18px;padding:8px;border-radius:15px;flex-wrap:wrap;justify-content:space-between;overflow:visible}.toolbar::-webkit-scrollbar{display:none}.toolbar .grow{display:none}.toolbar #epMeta{display:none}
-    .toolbar button,.toolbar label{min-height:38px;padding:7px 10px}.toolbar #rateCtl input,.toolbar #fsCtl input{display:none}
-    article{--fs:18px;border:0;border-radius:0;margin:0 -14px;padding:25px 18px 80px;background:color-mix(in srgb,var(--surface) 72%,transparent);box-shadow:none;line-height:1.82}
+    .reader-head{padding:0 4px;margin-bottom:16px}h2.ep{font-size:29px;-webkit-line-clamp:3}#epMeta{font-size:11px}
+    article{border:0;border-radius:0;margin:0 -14px;padding:25px 18px 80px;background:color-mix(in srgb,var(--surface) 72%,transparent);box-shadow:none}
     .vg{border-radius:18px;padding:15px}.vg-h{align-items:flex-start;flex-wrap:wrap}.vg-h .vt{flex:1 1 70%}.vitem{gap:8px}.vs{font-size:13px}
     dialog{position:fixed;max-width:none;width:100%;margin:0;inset:auto 0 0;border-radius:24px 24px 0 0;border-width:1px 0 0;padding:23px 20px calc(20px + var(--safe-bottom));max-height:82vh;overflow:auto}
-    #bar{bottom:calc(72px + var(--safe-bottom))}.nav-item{min-height:54px}
-    #full{padding-left:20px;padding-right:20px}#fullArt{width:min(78vw,350px);border-radius:24px}#fullTitle{font-size:22px}
+    #bar{left:0;right:0;bottom:calc(66px + var(--safe-bottom));border-radius:18px 18px 0 0;overflow:visible;background:var(--surface)}
+    #barTrack{height:3px;border-radius:18px 18px 0 0;overflow:hidden}
+    #barInner{min-height:70px;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;padding:8px 12px}
+    #barCover{width:44px;height:44px;border-radius:10px}.player-identity{gap:9px}#barTitle{font-size:12px}#barSub{font-size:10px}
+    .player-transport{gap:0}.player-transport .skip-button,.player-tools .desktop-only{display:none!important}
+    #barPlay{width:46px!important;height:46px!important;min-width:46px!important;font-size:17px!important}
+    .mobile-only{display:inline-flex!important}#learningToggle{min-width:58px!important;padding:0 13px!important;background:var(--accent)!important;color:#fff!important}
+    #learningPanel{display:none}.learning-title{min-width:0;font-size:20px}.learning-actions{display:grid;grid-template-columns:1fr;gap:0;width:100%}
+    #bar.learning-open{bottom:0;z-index:72;border-radius:24px 24px 0 0;padding-bottom:var(--safe-bottom);box-shadow:0 -24px 60px rgba(0,0,0,.25)}
+    body.player-sheet-open #playerScrim{display:block}
+    #bar.learning-open #barTrack{height:4px;margin:0 24px;background:var(--surface-2)}
+    #bar.learning-open #barInner{grid-template-columns:1fr;gap:14px;padding:10px 24px 14px}
+    #bar.learning-open .player-identity{width:100%}#bar.learning-open #barText{max-width:none}
+    #bar.learning-open .player-transport{display:flex;order:3;width:100%;gap:28px}
+    #bar.learning-open .player-transport .skip-button{display:inline-flex!important;font-size:13px}
+    #bar.learning-open .player-tools{display:none}
+    #bar.learning-open #barPlay{width:62px!important;height:62px!important;min-width:62px!important;font-size:22px!important}
+    #bar.learning-open #learningPanel{display:block;padding:10px 24px 18px;border-top:1px solid var(--line)}
+    #bar.learning-open .learning-title{margin-bottom:7px}.learning-title svg{width:24px;height:24px}
+    #bar.learning-open #locateBtn,.switch-control,#bar.learning-open .mobile-rate-row{height:52px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;width:100%;justify-content:flex-start;padding:0 2px;font-size:14px}
+    #bar.learning-open #locateBtn{color:var(--ink)!important}#bar.learning-open #locateBtn.following span{color:var(--accent)}
+    #bar.learning-open #locateBtn{justify-content:flex-start!important}.switch-control>span:last-child{order:-1}.switch-control .switch-track{margin-left:auto}
+    #bar.learning-open .mobile-rate-row{display:flex!important}#mobileRateVal{margin-left:auto}
+    #bar.learning-open #learningClose{display:flex;margin:10px auto 0;height:42px;border-bottom:0;border-radius:12px;padding:0 18px}
+    .nav-item{min-height:54px}
+    #settings{max-height:88vh}.setting-row{gap:12px}.setting-control input[type="range"]{width:116px}
   }
   @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
 </style>
@@ -214,7 +261,10 @@
     </button>
     <div class="topbar-state">
       <span class="status" id="status">就绪</span>
-      <span id="ver" title="界面版本。改了 web/index.html 就把它加一, 用来确认浏览器加载的不是旧缓存">r17</span>
+      <span id="ver" title="界面版本。改了 web/index.html 就把它加一, 用来确认浏览器加载的不是旧缓存">r18</span>
+      <button id="settingsBtn" class="icon-button" aria-label="打开阅读设置" title="阅读设置">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.42 1.42-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V20h-2v-.48A1.7 1.7 0 0 0 12.38 18a1.7 1.7 0 0 0-1.88.34l-.06.06-1.42-1.42.06-.06A1.7 1.7 0 0 0 9.42 15a1.7 1.7 0 0 0-1.56-1.03H7.4v-2h.46A1.7 1.7 0 0 0 9.42 11a1.7 1.7 0 0 0-.34-1.88l-.06-.06 1.42-1.42.06.06a1.7 1.7 0 0 0 1.88.34A1.7 1.7 0 0 0 13.41 6.5V6h2v.5a1.7 1.7 0 0 0 1.03 1.54 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.42 1.42-.06.06A1.7 1.7 0 0 0 19.4 11a1.7 1.7 0 0 0 1.56 1.03h.44v2h-.44A1.7 1.7 0 0 0 19.4 15Z"/></svg>
+      </button>
     </div>
   </div>
 </header>
@@ -250,18 +300,6 @@
           <h2 class="ep" id="epTitle"></h2>
           <span id="epMeta"></span>
         </div>
-        <div class="toolbar" aria-label="阅读控制">
-          <span class="grow"></span>
-          <button id="playBtn" title="播放 / 暂停">▶ 播放</button>
-          <button id="locateBtn" title="定位到正在读的那一句, 并重新跟随"><span class="ic">◎</span> 定位</button>
-          <button id="loopBtn" title="把当前句再放一遍">↻ 重听</button>
-          <label title="当前句播完后是否继续下一句"><input type="checkbox" id="autonext"> 连播</label>
-          <label title="在每句英文下面显示中文翻译"><input type="checkbox" id="showZh"> 中译</label>
-          <button id="rateCtl" title="语速: 点一下切换下一档 (0.5/0.75/1/1.25/1.5/2)"><b id="rateVal">1×</b></button><input type="range" id="rate" min="0.5" max="2" step="0.25" value="1" style="display:none" aria-hidden="true">
-          <datalist id="rateSteps"><option value="0.5"></option><option value="0.75"></option><option value="1"></option><option value="1.25"></option><option value="1.5"></option><option value="2"></option></datalist>
-          <button id="rateReset" title="回到 1 倍速">1×</button>
-          <label id="fsCtl">字号 <input type="range" id="fs" min="15" max="26" value="19"></label>
-        </div>
         <article id="article"></article>
       </div>
     </div>
@@ -292,42 +330,67 @@
   </menu>
 </dialog>
 
-<!-- 常驻底部播放器 -->
-<div id="bar">
-  <div id="barFill"></div>
-  <div id="barTrack"></div>
-  <div id="barInner">
-    <div id="barCover">🎧</div>
-    <div id="barText">
-      <div id="barTitle">—</div>
-      <div id="barSub">—</div>
-    </div>
-    <button id="barPlay" title="播放 / 暂停">▶</button>
-    <button id="barClose" title="停止并收起">✕</button>
+<dialog id="settings" aria-labelledby="settingsTitle">
+  <div class="settings-head">
+    <div><h3 id="settingsTitle">阅读设置</h3><p>低频选项放在这里，阅读页只保留当下需要的操作。</p></div>
+    <button id="settingsClose" aria-label="关闭设置">×</button>
   </div>
-</div>
+  <div class="setting-row">
+    <div class="setting-copy"><b>正文字号</b><span>同时应用到电脑和手机。</span></div>
+    <div class="setting-control"><input type="range" id="fs" min="15" max="26" value="20"><output id="fsVal">20</output></div>
+  </div>
+  <div class="setting-row">
+    <div class="setting-copy"><b>正文行距</b><span>紧凑适合扫读，宽松适合精读。</span></div>
+    <div class="setting-control"><input type="range" id="leading" min="1.55" max="2.1" step="0.05" value="1.88"><output id="leadingVal">1.88</output></div>
+  </div>
+  <div class="setting-row">
+    <div class="setting-copy"><b>外观</b><span>可跟随系统，也可固定明亮或深色。</span></div>
+    <div class="setting-control"><select id="theme"><option value="system">跟随系统</option><option value="light">明亮</option><option value="dark">深色</option></select></div>
+  </div>
+</dialog>
 
-<!-- 全屏播放器 -->
-<div id="full">
-  <div id="fullTop">
-    <button id="fullDown" title="收起">⌄</button>
-    <span id="fullSubTop">正在播放</span>
-    <button id="fullToEp" style="margin-left:auto;font-size:13px" title="跳到这一集的正文">读这一集</button>
+<div id="playerScrim" aria-hidden="true"></div>
+
+<!-- 同一个响应式播放器: 电脑贴底展开, 手机默认迷你、按需展开 -->
+<section id="bar" aria-label="播放器">
+  <div id="barTrack" aria-label="播放进度"><div id="barFill"></div></div>
+  <div id="barInner">
+    <div class="player-identity">
+      <div id="barCover">🎧</div>
+      <div id="barText">
+        <div id="barTitle">—</div>
+        <div id="barSub">—</div>
+      </div>
+    </div>
+    <div class="player-transport" aria-label="播放控制">
+      <button id="barBack10" class="skip-button" title="回退 10 秒" aria-label="回退 10 秒">↺ 10</button>
+      <button id="barPlay" title="播放 / 暂停" aria-label="播放">▶</button>
+      <button id="barFwd10" class="skip-button" title="前进 10 秒" aria-label="前进 10 秒">10 ↻</button>
+    </div>
+    <div class="player-tools">
+      <button id="rateCtl" class="desktop-only" title="切换语速"><b id="rateVal">1×</b> <span aria-hidden="true">⌄</span></button>
+      <input type="range" id="rate" min="0.5" max="2" step="0.25" value="1" hidden aria-hidden="true">
+      <button id="rateReset" tabindex="-1" aria-hidden="true">1×</button>
+      <span class="volume-wrap desktop-only" title="音量"><span aria-hidden="true">♫</span><input id="barVolume" type="range" min="0" max="1" step="0.05" value="1" aria-label="音量"></span>
+      <button id="playerSettingsBtn" class="desktop-only" title="阅读设置" aria-label="打开阅读设置">⚙</button>
+      <button id="learningToggle" class="mobile-only" aria-expanded="false">学习</button>
+    </div>
   </div>
-  <div id="fullArt">🎧</div>
-  <div id="fullTitle">—</div>
-  <div id="fullSub">—</div>
-  <div id="fullSpacer"></div>
-  <div id="fullTimes"><span id="fullCur">0:00</span><span id="fullDur">0:00</span></div>
-  <div id="fullBar"><div id="fullBarFill"></div><div id="fullBarKnob"></div></div>
-  <div id="fullCtl">
-    <button id="fullBack15" title="回退 15 秒"><span class="big">↺</span><span class="lbl">15</span></button>
-    <button id="fullPlay" class="big" title="播放 / 暂停">▶</button>
-    <button id="fullFwd30" title="前进 30 秒"><span class="big">↻</span><span class="lbl">30</span></button>
-    <button id="fullRate" title="切换语速"><b id="fullRateVal">0.75×</b><span class="lbl">语速</span></button>
+  <div id="learningPanel" aria-label="学习控制">
+    <div class="learning-title">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 8 9-5 9 5-9 5-9-5Z"/><path d="M7 11v5c2.8 2.1 7.2 2.1 10 0v-5M21 8v6"/></svg>
+      <span>学习控制</span>
+    </div>
+    <div class="learning-actions">
+      <button id="locateBtn" title="定位到正在读的那一句, 并重新跟随"><span aria-hidden="true">◎</span> 定位到当前句</button>
+      <label class="switch-control" title="当前句播完后是否继续下一句"><input type="checkbox" id="autonext"><span class="switch-track"></span><span>自动连播</span></label>
+      <label class="switch-control" title="在每句英文下面显示中文翻译"><input type="checkbox" id="showZh"><span class="switch-track"></span><span>显示中译</span></label>
+      <button id="mobileRateCtl" class="mobile-rate-row"><span>播放速度</span><b id="mobileRateVal">1×</b><span aria-hidden="true">›</span></button>
+    </div>
+    <button id="learningClose" title="收起学习控制">⌄ 收起</button>
   </div>
-  <div id="fullNote">点「读这一集」回到正文;点某一句会从那一句开始播</div>
-</div>
+  <button id="barClose" tabindex="-1" aria-hidden="true">停止</button>
+</section>
 
 <script>
 const $ = s => document.querySelector(s);
@@ -555,24 +618,20 @@ async function openEpisode(id, push){
       if(here){ anchorIdx = here.idx; setHighlight(here.idx) }
     }
   }
-  // 播放条不该等到"点了播放"才出现。播客软件里, 只要你跟这一集发生过关系,
-  // 它就一直在底部等着你接着听 —— 刷新页面也一样(实测反馈: 刷新后以为播放器没做出来)。
+  // 阅读页和播放器是一个完整工作台: 打开可读单集后就把播放器预置好,
+  // 不再要求用户先在正文里点一句才能看到播放控制。
   const saved = JSON.parse(localStorage.getItem('et.pos.' + id) || 'null');
   const hasPlayer = playing.id === id;
-  // jumped 时不吃「上次听到」的进度: 你是从生词本明确跳到某一句的, 再按进度把视野
-  // 拉回上次的位置, 跳转就等于没发生(实测踩过: 目标句被顶到视口上方约 70px)。
-  if(!hasPlayer && saved && !jumped){
+  if(!playing.id){
     playing.id = id;
     playing.title = current.title || '';
     playing.show = current.show_title || '';
     playing.art = current.show_image || '';
     playing.duration = current.duration_sec || 0;
-    playing.primed = saved.t || 0;      // 记着从哪接着听
-    document.body.classList.add('hasPlayer');
-    $('#bar').classList.add('on');
+    playing.primed = saved ? (saved.t || 0) : 0;
+    showPlayer();
     syncPlayerUI();
-  }
-  if(hasPlayer) playing.primed = null;
+  } else showPlayer();
   syncViewChrome();
   if(jumped){
     $('#status').textContent = '已跳到标这个词的那一句';
@@ -669,6 +728,10 @@ function setRate(v, persist){
 // 旧版本存下的非法档位, 虽然显示和播放都正常, 但下次读出来还要再纠正一遍。
 let rate = snapRate(localStorage.getItem('et.rate') || '1');
 try { localStorage.setItem('et.rate', String(rate)) } catch(e){}
+let volume = (() => {
+  const v = parseFloat(localStorage.getItem('et.volume') || '1');
+  return isFinite(v) ? Math.max(0, Math.min(1, v)) : 1;
+})();
 let autoNext = localStorage.getItem('et.autonext') === '1';
 // 跟随滚动默认关。这是「读为主」的必然结论:
 // 每句都滚一次 = 每分钟约 20 次平滑滚动, 页面永远在你脚下移动,
@@ -684,18 +747,22 @@ function applyRate(){
   if(audio) audio.playbackRate = rate;
   const lbl = fmtRate(rate);
   $('#rate').value = rate; $('#rateVal').textContent = lbl;
-  const f = $('#fullRateVal'); if(f) f.textContent = lbl;
+  $('#mobileRateVal').textContent = lbl;
 }
 $('#rate').oninput = e => setRate(e.target.value);
-// 工具栏上的语速按钮: 点一下进下一档。
-// 原来是"语速 + 滑块 + 数值"三项挤在一行, 被同排的胶囊按钮挤出了屏幕右边缘
-// (实测 x=378~446 而视口只有 390), 而且滑块被设成 display:none 后无法操作。
-// 现在只留一个大按钮, 点一下换一档; 全屏播放器里的「语速」走同一份档位表。
+$('#barVolume').value = volume;
+$('#barVolume').oninput = e => {
+  volume = Math.max(0, Math.min(1, parseFloat(e.target.value) || 0));
+  if(audio) audio.volume = volume;
+  try{ localStorage.setItem('et.volume', String(volume)) }catch(err){}
+};
+// 播放器里的语速按钮每次进一档；手机展开学习面板后使用同一份档位表。
 const cycleRate = () => {
   const i = RATE_STEPS.findIndex(v => Math.abs(v - rate) < 0.001);
   setRate(RATE_STEPS[(i + 1) % RATE_STEPS.length]);
 };
 $('#rateCtl').onclick = cycleRate;
+$('#mobileRateCtl').onclick = cycleRate;
 $('#rateReset').onclick = () => setRate(1);
 $('#autonext').checked = autoNext;
 $('#autonext').onchange = e => {
@@ -761,34 +828,8 @@ function setHighlightCursor(idx){
 }
 
 $('#locateBtn').onclick = locateCurrent;
-$('#loopBtn').onclick = () => {
-  if(!current) return;
-  const idx = curIdx >= 0 ? curIdx : 0;
-  playSeg(current.id, idx);
-};
-$('#playBtn').onclick = async () => {
-  if(!current) return;
-  if(playing.id === current.id && playing.primed != null){
-    const at = playing.primed; playing.primed = null;
-    await startEpisode(current, at);
-    return;
-  }
-  // 播放器已经在放别的一集: 切到当前这一集继续
-  if(playing.id && playing.id !== current.id){ startEpisode(current); return }
-  if(!audio || !playing.id){ playSeg(current.id, curIdx >= 0 ? curIdx : 0); return }
-  if(audio.paused){
-    // 从当前句起点继续, 避免停在句子之间的静音间隙里
-    const here = segAt(audio.currentTime);
-    if(here) audio.currentTime = here.start_sec;
-    audio.play().catch(e => $('#status').textContent = '播放失败: '+e.message);
-  } else {
-    audio.pause();
-  }
-  syncPlayerUI();
-};
 
 // ==================== 底部常驻播放器 ====================
-$('#bar').onclick = (e) => { if(e.target.closest('button')) return; openFull() };
 $('#barPlay').onclick = async (e) => {
   e.stopPropagation();
   // 预置状态(只有记录、还没有播放器): 从上次的位置建播放器并开播
@@ -801,39 +842,62 @@ $('#barPlay').onclick = async (e) => {
   }
   togglePlay();
 };
+$('#barBack10').onclick = () => skip(-10);
+$('#barFwd10').onclick = () => skip(10);
 $('#barClose').onclick = (e) => { e.stopPropagation(); stopAndClose() };
-$('#fullDown').onclick = closeFull;
-$('#fullPlay').onclick = togglePlay;
-$('#fullBack15').onclick = () => skip(-15);
-$('#fullFwd30').onclick = () => skip(30);
-$('#fullRate').onclick = () => {
-  // 按 RATE_STEPS 循环: 0.5 → 0.75 → 1 → 1.25 → 1.5 → 2 → 回到 0.5
-  const i = RATE_STEPS.findIndex(v => Math.abs(v - rate) < 0.001);
-  setRate(RATE_STEPS[(i + 1) % RATE_STEPS.length]);
-};
-$('#fullToEp').onclick = () => {
-  if(!playing.id) return;
-  closeFull();
-  if(current && current.id === playing.id){ window.scrollTo({top: 0, behavior: 'smooth'}); return }
-  location.hash = playing.id;
-  openEpisode(playing.id, false);
-};
 // 点进度条任意位置跳转(按住可以拖)
 function barSeek(clientX){
-  const r = $('#fullBar').getBoundingClientRect();
+  const r = $('#barTrack').getBoundingClientRect();
   const p = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
   const dur = (audio && isFinite(audio.duration) && audio.duration > 0) ? audio.duration : playing.duration;
+  if(dur > 0 && !audio && playing.primed != null){ playing.primed = p * dur; syncPlayerUI(); return }
   if(dur > 0) seekTo(p * dur);
 }
-$('#fullBar').addEventListener('pointerdown', (e) => {
+$('#barTrack').addEventListener('pointerdown', (e) => {
   dragging = true; barSeek(e.clientX);
-  $('#fullBar').setPointerCapture(e.pointerId);
+  $('#barTrack').setPointerCapture(e.pointerId);
 });
-$('#fullBar').addEventListener('pointermove', (e) => { if(dragging) barSeek(e.clientX) });
-$('#fullBar').addEventListener('pointerup', (e) => {
+$('#barTrack').addEventListener('pointermove', (e) => { if(dragging) barSeek(e.clientX) });
+$('#barTrack').addEventListener('pointerup', (e) => {
   dragging = false;
-  try { $('#fullBar').releasePointerCapture(e.pointerId) } catch(_) {}
+  try { $('#barTrack').releasePointerCapture(e.pointerId) } catch(_) {}
 });
+
+function compactPlayer(){ return matchMedia('(max-width:760px)').matches }
+function setLearningOpen(open, persist){
+  const bar = $('#bar');
+  bar.classList.toggle('learning-open', !!open);
+  $('#learningToggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+  document.body.classList.toggle('player-sheet-open', !!open && compactPlayer());
+  if(persist !== false && !compactPlayer()){
+    try{ localStorage.setItem('et.learning.open', open ? '1' : '0') }catch(e){}
+  }
+  syncViewChrome();
+}
+function showPlayer(){
+  document.body.classList.add('hasPlayer');
+  $('#bar').classList.add('on');
+  const desktopOpen = localStorage.getItem('et.learning.open') !== '0';
+  setLearningOpen(compactPlayer() ? false : desktopOpen, false);
+}
+function closeLearning(){ setLearningOpen(false) }
+$('#learningToggle').onclick = () => setLearningOpen(true);
+$('#learningClose').onclick = closeLearning;
+$('#playerScrim').onclick = closeLearning;
+addEventListener('resize', () => {
+  if(!$('#bar').classList.contains('on')) return;
+  setLearningOpen(compactPlayer() ? false : localStorage.getItem('et.learning.open') !== '0', false);
+});
+
+// 设置是全局页面级能力，不再挤在阅读控件里。
+function openSettings(){
+  const d = $('#settings');
+  if(!d.open) d.showModal();
+}
+$('#settingsBtn').onclick = openSettings;
+$('#playerSettingsBtn').onclick = openSettings;
+$('#settingsClose').onclick = () => $('#settings').close();
+$('#settings').addEventListener('click', e => { if(e.target === $('#settings')) $('#settings').close() });
 
 // 播放位置落在哪一句。不要假设 segments[idx] 就是第 idx 句:
 // Whisper 的片段起止时间会重叠, 数组下标和位置不是一回事。
@@ -966,6 +1030,7 @@ function ensureAudio(){
   document.body.appendChild(audio);
   audio.defaultPlaybackRate = rate;
   audio.playbackRate = rate;
+  audio.volume = volume;
 
   // 有些不守规矩的浏览器会重置倍速, 这里兜住
   audio.addEventListener('ratechange', () => {
@@ -1034,8 +1099,7 @@ function loadEpisode(ep){
   if(audio) { audio.pause(); audio.currentTime = 0 }
   a.src = `/episodes/${ep.id}/audio`;
   a.load();
-  document.body.classList.add('hasPlayer');
-  $('#bar').classList.add('on');
+  showPlayer();
   syncPlayerUI();
   return a;
 }
@@ -1114,6 +1178,11 @@ function seekTo(sec){
   syncPlayerUI();
 }
 function skip(delta){
+  if(!audio && playing.primed != null){
+    playing.primed = Math.max(0, Math.min((playing.duration || Infinity) - .3, playing.primed + delta));
+    syncPlayerUI();
+    return;
+  }
   if(!audio) return;
   seekTo((audio.currentTime || 0) + delta);
 }
@@ -1142,7 +1211,7 @@ function stopAndClose(){
   playing.id = null; playing.loaded = false; playing.primed = null; playing.title = ''; playing.clips = [];
   $('#bar').classList.remove('on');
   document.body.classList.remove('hasPlayer');
-  closeFull();
+  closeLearning();
 }
 
 // ==================== 播放器界面 ====================
@@ -1167,14 +1236,17 @@ function syncPlayerUI(){
       el.dataset.art = 'none'; el.textContent = '🎧';
     }
   };
-  setArt('#barCover'); setArt('#fullArt');
+  setArt('#barCover');
   const clips = clipsOf(playing.id);
   const here = clips.filter(c => c.start_sec <= cur + 0.05).pop();
   const isCurrentEp = current && current.id === playing.id;
   $('#barSub').textContent = (primed != null ? '上次听到这里' : (a && !a.paused ? '播放中' : '已暂停'))
     + (dur ? ' · ' + fmtTime(cur) + ' / ' + fmtTime(dur) : '')
     + (!primed && isCurrentEp && here ? ' · ' + (here.idx + 1) + '/' + clips.length + ' 句' : '');
-  $('#barPlay').textContent = (a && !a.paused) ? '❚❚' : '▶';
+  const playingNow = !!(a && !a.paused);
+  $('#barPlay').textContent = playingNow ? '❚❚' : '▶';
+  $('#barPlay').classList.toggle('is-playing', playingNow);
+  $('#barPlay').setAttribute('aria-label', playingNow ? '暂停' : '播放');
   $('#barFill').style.width = pct + '%';
 
   // 记住播放位置, 下次进来能接着听
@@ -1182,25 +1254,13 @@ function syncPlayerUI(){
     try { localStorage.setItem('et.pos.' + playing.id, JSON.stringify({ t: Math.floor(cur), idx: here ? here.idx : null })) } catch(e){}
   }
 
-  const b = $('#playBtn');
-  if(b) b.textContent = (isCurrentEp && a && !a.paused) ? '❚❚ 暂停' : '▶ 播放';
-
-  if($('#full').classList.contains('on')){
-    $('#fullTitle').textContent = playing.title;
-    $('#fullSub').textContent = playing.show || '';
-    $('#fullCur').textContent = fmtTime(cur);
-    $('#fullDur').textContent = fmtTime(dur);
-    $('#fullBarFill').style.width = pct + '%';
-    $('#fullBarKnob').style.left = pct + '%';
-    $('#fullPlay').textContent = (a && !a.paused) ? '❚❚' : '▶';
-    $('#fullRateVal').textContent = fmtRate(rate);
-  }
 }
 // 兼容旧调用点(工具栏按钮等)
 function syncPlayBtn(){ syncPlayerUI() }
 
-function openFull(){ $('#full').classList.add('on'); syncPlayerUI(); syncViewChrome() }
-function closeFull(){ $('#full').classList.remove('on'); syncViewChrome() }
+// 保留这两个语义化入口，旧的「全屏播放器」已经改成与底部播放器相连的学习面板。
+function openFull(){ setLearningOpen(true); syncPlayerUI() }
+function closeFull(){ closeLearning() }
 
 function setHighlight(i){
   if(curIdx>=0){ const p = $(`.s[data-i="${curIdx}"]`); if(p) p.classList.remove('cur') }
@@ -1302,7 +1362,7 @@ setInterval(() => {
     // 播放头停在 anchor、高亮却指着 next, 看起来就是"标记跟我读的那句错开了"。
     setHighlight(anchor.idx);
     scrollToSeg(anchor.idx);
-    $('#status').textContent = '本句结束(↻ 重听 / 空格)';
+    $('#status').textContent = '本句结束(按空格重听)';
     syncPlayerUI();
     return;
   }
@@ -1388,7 +1448,7 @@ $('#back').onclick = () => showList(true);
 // 之前 showList() 里写了 history.pushState({}, '', ' '), 会把 hash 抹掉 —— 实测踩过。
 function showList(pushHistory){
   // 注意: 这里**不能**停音频。音频属于「正在播放的那一集」, 独立于「正在读的那一集」;
-  // 返回列表就该继续放(这是常驻播放器的全部意义)。想停请点播放条上的 ✕。
+  // 返回列表就该继续放(这是常驻播放器的全部意义)。
   // 这行 pause() 是播放器还不存在时留下的, 会正好抵消掉常驻播放器 —— 实测踩过。
   $('#list').style.display='block'; $('#reader').style.display='none';
   $('#vocab').style.display='none';
@@ -1424,10 +1484,10 @@ function syncViewChrome(){
   $('#listIntro').hidden = !inList;
   $('#vocabIntro').hidden = !inVocab;
   $('#back').style.display = inList ? 'none' : 'grid';
-  const fullOpen = $('#full').classList.contains('on');
-  $('#homeBtn').classList.toggle('active', !fullOpen && (inList || inReader));
-  $('#vocabBtn').classList.toggle('active', !fullOpen && inVocab);
-  $('#playerTab').classList.toggle('active', fullOpen);
+  const playerOpen = compactPlayer() && $('#bar').classList.contains('learning-open');
+  $('#homeBtn').classList.toggle('active', !playerOpen && (inList || inReader));
+  $('#vocabBtn').classList.toggle('active', !playerOpen && inVocab);
+  $('#playerTab').classList.toggle('active', playerOpen);
   $('#viewTitle').textContent = inReader ? 'Reading' : (inVocab ? 'Vocabulary' : 'Library');
 }
 
@@ -1628,22 +1688,48 @@ function jumpToWord(it){
   openEpisode(it.episode_id, true);
 }
 
-// 字号也要持久化: 语速/连播/中译都记了, 唯独字号刷新后回到默认,
-// 等于每次打开都要重新调一遍(实测踩过)。
+// 阅读外观统一放到设置页，并在电脑/手机间共用同一份本地偏好。
 function applyFontSize(px){
   document.documentElement.style.setProperty('--fs', px + 'px');
   const el = $('#fs'); if(el) el.value = px;
+  const out = $('#fsVal'); if(out) out.value = px + 'px';
 }
 $('#fs').oninput = e => {
   applyFontSize(e.target.value);
   try{ localStorage.setItem('et.fs', String(e.target.value)) }catch(err){}
 };
 const savedFs = (() => { try{ return parseFloat(localStorage.getItem('et.fs')) }catch(e){ return NaN } })();
-if(savedFs >= 15 && savedFs <= 26) applyFontSize(savedFs);
+applyFontSize(savedFs >= 15 && savedFs <= 26 ? savedFs : 20);
+
+function applyLeading(v){
+  const n = Math.max(1.55, Math.min(2.1, parseFloat(v) || 1.88));
+  document.documentElement.style.setProperty('--reader-leading', String(n));
+  $('#leading').value = n;
+  $('#leadingVal').value = n.toFixed(2);
+}
+$('#leading').oninput = e => {
+  applyLeading(e.target.value);
+  try{ localStorage.setItem('et.leading', String(e.target.value)) }catch(err){}
+};
+const savedLeading = (() => { try{ return parseFloat(localStorage.getItem('et.leading')) }catch(e){ return NaN } })();
+applyLeading(savedLeading >= 1.55 && savedLeading <= 2.1 ? savedLeading : 1.88);
+
+function applyTheme(value){
+  const theme = ['light','dark'].includes(value) ? value : 'system';
+  if(theme === 'system') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.dataset.theme = theme;
+  $('#theme').value = theme;
+}
+$('#theme').onchange = e => {
+  applyTheme(e.target.value);
+  try{ localStorage.setItem('et.theme', e.target.value) }catch(err){}
+};
+applyTheme((() => { try{ return localStorage.getItem('et.theme') || 'system' }catch(e){ return 'system' } })());
 
 // ---------- 快捷键 ----------
 // 空格 = 重听当前句 / 从当前句播放; [ ] = 上一句 / 下一句
 document.addEventListener('keydown', e => {
+  if(e.key === 'Escape' && $('#bar').classList.contains('learning-open')){ closeLearning(); return }
   if(e.target.tagName === 'INPUT') return;
   if(!segments.length || curIdx < 0) return;
   if(e.code === 'Space'){ e.preventDefault(); playSeg(current.id, curIdx) }

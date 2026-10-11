@@ -30,9 +30,8 @@
     async init() {
       // 1) 新文档: 销毁播放器, 回到初始 DOM 状态
       engine.resetPlayer();
-      document.body.classList.remove("hasPlayer", "reading", "show-zh");
-      $("#bar").classList.remove("on");
-      $("#full").classList.remove("on");
+      document.body.classList.remove("hasPlayer", "reading", "show-zh", "player-sheet-open");
+      $("#bar").classList.remove("on", "learning-open");
       document.querySelectorAll("#article .s.cur").forEach((e) => e.classList.remove("cur"));
       const pop = $("#pop");
       if (pop && pop.open) pop.close();

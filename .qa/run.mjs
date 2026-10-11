@@ -371,7 +371,10 @@ const phaseCases = (p) =>
 
 for (const phase of PHASES) {
   if (phase === "main") {
-    if (lastViewport !== "desktop") { await setViewport(1280, 738); lastViewport = "desktop"; }
+    // TaskSpace 可能是从上一轮手机视觉检查复用的。clearDeviceMetricsOverride
+    // 在部分 Chromium 会话里不会立即恢复宿主视口，所以 main 相每次明确设回桌面尺寸。
+    await setViewport(1280, 738);
+    lastViewport = "desktop";
     await gotoURL("/#" + fixture.mainId, { fresh: true });
     await stubImportFailure(true);
     await runPhase("main", phaseCases("main"));

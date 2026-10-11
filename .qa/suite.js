@@ -146,7 +146,7 @@
       if (bar) bar.style.pointerEvents = on ? "none" : "";
     },
     _bypassOverlays(on) {
-      const ids = ["#bar", "#full"];
+      const ids = ["#bar"];
       for (const sel of ids) {
         const el = $(sel);
         if (!el) continue;
@@ -379,7 +379,8 @@
       err: a && a.error ? a.error.code : null,
       cur: $(".s.cur")?.dataset.i ?? null,
       barOn: $("#bar").classList.contains("on"),
-      fullOn: $("#full").classList.contains("on"),
+      // 兼容旧用例里的状态名：原先的全屏播放器已改为与底部播放器相连的学习面板。
+      fullOn: $("#bar").classList.contains("learning-open"),
       hasPlayer: document.body.classList.contains("hasPlayer"),
       status: $("#status").textContent,
       barSub: $("#barSub").textContent,
@@ -445,10 +446,18 @@
   const assertEquals = (a, b, m) => eq(a, b, m);
 
   async function setCheckbox(sel, want) {
-    if ($(sel).checked === want) return;
+    const el = $(sel);
+    assert(el, `找不到 ${sel}`);
+    // 新布局中连播/中译都在可收起的学习面板里。
+    // 用例要改它们时先按真实交互展开，不绕过界面直接改 DOM。
+    if (!el.getClientRects().length && el.closest("#learningPanel") && typeof openFull === "function") {
+      openFull();
+      await sleep(180);
+    }
+    if (el.checked === want) return;
     realClick(sel);
     await sleep(250);
-    eq($(sel).checked, want, `无法把 ${sel} 设为 ${want}`);
+    eq(el.checked, want, `无法把 ${sel} 设为 ${want}`);
   }
   async function setRange(sel, v) {
     const el = $(sel);
@@ -556,17 +565,20 @@
   T("A 列表页", "A3", "空输入点「导入」: 不发请求、不报错", [
     "清空输入框 → 点导入",
   ], async () => {
+    await home();
     $("#url").value = "";
-    const before = performance.getEntriesByType("resource").length;
+    const importRequests = () => performance.getEntriesByType("resource").filter((e) => /\/import(?:\?|$)/.test(e.name)).length;
+    const before = importRequests();
     realClick("#go");
     await sleep(700);
-    eq(performance.getEntriesByType("resource").length, before, "不该产生新请求");
+    eq(importRequests(), before, "不该产生导入请求");
     assert(!/失败/.test($("#status").textContent), `状态栏不该报错: ${$("#status").textContent}`);
   });
 
   T("A 列表页", "A4", "非法链接导入: 明确失败提示(不装成功)", [
     "输入 not-a-url → 点导入",
   ], async () => {
+    await home();
     $("#url").value = "not-a-url";
     realClick("#go");
     await sleep(700);
@@ -578,6 +590,7 @@
   T("A 列表页", "A5", "输入框按 Enter 等价于点「导入」", [
     "聚焦输入框 → 输入非法 URL → 回车",
   ], async () => {
+    await home();
     D.focus("#url");
     $("#url").value = "still-not-a-url";
     D.press("Enter");
@@ -599,7 +612,7 @@
     assert($$("#article .w").length > $$("#article .s").length, "词级 span 缺失");
     assert($("#epTitle").textContent.trim().length > 0, "标题为空");
     assert(document.body.classList.contains("reading"), "body 缺少 reading 类");
-    eq($("#url") && getComputedStyle($("#url")).display !== "none", true, "桌面端导入框应保留");
+    eq(getComputedStyle($("#url")).display, "none", "进入阅读后应隐藏导入框");
   }, { timeout: 12000 });
 
   T("B 阅读页", "B2", "正文文本与后端 segments 逐字一致(原文不可改写)", [
@@ -647,11 +660,14 @@
     closePop();
   }, { timeout: 12000 });
 
-  T("B 阅读页", "B5", "工具栏控件齐全, 默认值符合设计(跟随滚动默认开)", [
-    "进入正文 → 检查工具栏",
+  T("B 阅读页", "B5", "播放与学习控件归位, 低频选项只在设置页", [
+    "进入正文 → 检查底部播放器、学习面板与设置弹窗",
   ], async () => {
-    for (const sel of ["#rate", "#rateReset", "#fs", "#autonext", "#showZh", "#playBtn", "#loopBtn", "#locateBtn"])
+    for (const sel of ["#barTrack", "#barBack10", "#barPlay", "#barFwd10", "#rateCtl", "#barVolume", "#playerSettingsBtn", "#locateBtn", "#autonext", "#showZh", "#fs", "#leading", "#theme"])
       assert($(sel), `缺少 ${sel}`);
+    assert(!$(".toolbar"), "正文上方不应再有浮动工具栏");
+    assert(!$("#loopBtn"), "不应再提供重复的可见重听按钮");
+    eq($("#fs").closest("dialog")?.id, "settings", "字号应收纳在设置页");
     const r = parseFloat($("#rate").value);
     assert(r >= 0.5 && r <= 1.5, `语速初值异常 ${r}`);
     // 跟随滚动没有独立勾选框: 它默认开, 状态挂在「定位」按钮的 .following 上,
@@ -677,7 +693,7 @@
     await playSentence(1);
     // 前置兜底: 如果点击没有真正开始播(合成事件偶发被吞), 用工具栏播放键再催一次
     if (state().paused !== false) {
-      realClick("#playBtn");
+      realClick("#barPlay");
       await waitFor(() => state().paused === false, { timeout: 6000, desc: "前置: 开始播放" });
     }
     const before = state();
@@ -806,16 +822,18 @@
     near(s.ct, segOf(idx).start_sec, 3.5, "应回到句首");
   }, { timeout: 12000 });
 
-  T("D 逐句播放", "D2", "↻ 重听: 从当前句起点重新播", [
-    "播完停在句首 → 点 ↻ 重听",
+  T("D 逐句播放", "D2", "空格重听: 无额外按钮也能从当前句起点重新播", [
+    "播完停在句首 → 按空格",
   ], async () => {
     await openEpisode(S.data.expected.shortId);
     await setCheckbox("#autonext", false);
     await playSentence(1);
-    await waitFor(() => /本句结束|已到结尾/.test(state().status), { timeout: 9000, desc: "停句" });
+    // 本用例测的是空格入口，句边界的实时走时由 D1 单独覆盖。
+    if (!state().paused) realClick("#barPlay");
+    await waitFor(() => state().paused === true, { timeout: 5000, desc: "先暂停" });
     const cur = +state().cur;
     const seg = segOf(cur);
-    realClick("#loopBtn");
+    D.press(" ");
     const s = await waitFor(() => {
       const st = state();
       return !st.paused && st.ct >= seg.start_sec - 0.6 && st.ct < seg.start_sec + 5 ? st : null;
@@ -834,7 +852,7 @@
     const s = state();
     eq(s.paused, false, "连播应继续播放");
     assert(+s.cur > 1, `高亮应前进, 实际 ${s.cur}`);
-    await realClick("#playBtn");
+    await realClick("#barPlay");
     await waitFor(() => state().paused, { timeout: 5000, desc: "暂停" });
   }, { timeout: 12000 });
 
@@ -844,30 +862,29 @@
     await openEpisode(S.data.expected.shortId);
     await setCheckbox("#autonext", false);
     await playSentence(1);
-    await waitFor(() => /本句结束|已到结尾/.test(state().status), { timeout: 9000, desc: "停句" });
     const i0 = +state().cur;
-    // 先确保处于暂停: 快捷键考的是"移动高亮 / 重听", 别被还在播的音频干扰
-    if (!state().paused) { realClick("#playBtn"); await waitFor(() => state().paused === true, { timeout: 5000, desc: "暂停" }); }
     D.press("]");
     await waitFor(() => +state().cur === i0 + 1, { timeout: 5000, desc: "下一句" });
     D.press("[");
     await waitFor(() => +state().cur === i0, { timeout: 5000, desc: "上一句" });
+    if (!state().paused) realClick("#barPlay");
+    await waitFor(() => state().paused === true, { timeout: 5000, desc: "重听前暂停" });
     D.press(" ");
     await waitFor(() => !state().paused, { timeout: 6000, desc: "空格重听" });
-    realClick("#playBtn");
+    realClick("#barPlay");
     await waitFor(() => state().paused === true, { timeout: 5000, desc: "收尾暂停" });
   }, { timeout: 12000 });
 
   T("D 逐句播放", "D5", "焦点在输入框时: 空格正常输入, 不劫持成重听", [
     "回到列表 → 聚焦导入框 → 输入含空格文本",
   ], async () => {
-    await home();
     // 造一个"正在播"的前置, 这样"空格被劫持"才会露出来
     await openEpisode(S.data.expected.shortId);
     await playSentence(1);
-    realClick("#playBtn");
+    realClick("#barPlay");
     await waitFor(() => state().paused === true, { timeout: 5000, desc: "先暂停" });
     const before = { cur: state().cur, paused: state().paused };
+    await home();
     realClick("#url");
     eq(D.focus("#url"), "url", "焦点应落在输入框");
     const r = D.press(" ");
@@ -879,73 +896,67 @@
   }, { timeout: 12000 });
 
   // ---------------- E 播放器
-  T("E 播放器", "E1", "底部播放器: 标题/进度/句序齐全, 点条展开全屏", [
-    "播放中 → 点底部播放条",
+  T("E 播放器", "E1", "打开可读单集即显示底部播放器", [
+    "进入正文 → 检查标题、进度和播放控制",
   ], async () => {
     await openEpisode(S.data.expected.shortId);
-    await playSentence(1);
     const s = await waitFor(() => (state().barTitle.trim().length > 0 ? state() : null), { timeout: 6000, desc: "播放条出现" });
+    eq(s.barOn, true, "播放器应立即出现");
     assert(/\d+:\d\d \/ \d+:\d\d/.test(s.barSub), `进度文案异常: ${s.barSub}`);
-    await realClick("#barInner");
-    await waitFor(() => state().fullOn, { timeout: 6000, desc: "展开全屏播放器" });
-  }, { timeout: 12000 });
-
-  T("E 播放器", "E2", "全屏播放器元素齐全, ⌄ 能收起", [
-    "检查全屏播放器 → 点 ⌄",
-  ], async () => {
-    await openEpisode(S.data.expected.shortId);
-    await playSentence(1);
-    realClick("#barInner");
-    await waitFor(() => state().fullOn, { timeout: 6000, desc: "展开全屏" });
-    for (const sel of ["#fullArt", "#fullTitle", "#fullCur", "#fullDur", "#fullBar", "#fullBack15", "#fullPlay", "#fullFwd30", "#fullRate", "#fullToEp"])
+    for (const sel of ["#barCover", "#barTitle", "#barTrack", "#barBack10", "#barPlay", "#barFwd10"])
       assert($(sel), `缺少 ${sel}`);
-    assert($("#fullTitle").textContent.trim().length > 0, "全屏标题为空");
-    assert(/^\d+:\d\d$/.test($("#fullDur").textContent), `时长格式: ${$("#fullDur").textContent}`);
-    realClick("#fullDown");
-    await waitFor(() => !state().fullOn, { timeout: 6000, desc: "收起" });
   }, { timeout: 12000 });
 
-  T("E 播放器", "E3", "全屏: ↺15 与 ↻30 真正改变播放头", [
-    "展开全屏 → 跳到 5 分钟 → ↻30 → ↺15",
+  T("E 播放器", "E2", "桌面学习控制连在播放器上且可收起", [
+    "收起学习区 → 点「学习」重新展开 → 点收起",
+  ], async () => {
+    await openEpisode(S.data.expected.shortId);
+    if (state().fullOn) realClick("#learningClose");
+    await waitFor(() => !state().fullOn, { timeout: 3000, desc: "收起学习区" });
+    realClick("#learningToggle");
+    await waitFor(() => state().fullOn, { timeout: 3000, desc: "展开学习区" });
+    for (const sel of ["#learningPanel", "#locateBtn", "#autonext", "#showZh", "#learningClose"])
+      assert($(sel), `缺少 ${sel}`);
+    assert(rect("#learningPanel").y >= rect("#barInner").bottom - 2, "学习区应紧贴播放器主行");
+    realClick("#learningClose");
+    await waitFor(() => !state().fullOn, { timeout: 3000, desc: "收起" });
+  }, { timeout: 12000 });
+
+  T("E 播放器", "E3", "底部播放器: 回退/前进 10 秒真正改变播放头", [
+    "跳到 30 秒 → 前进 10 秒 → 回退 10 秒",
   ], async () => {
     await openEpisode(S.data.expected.shortId);
     await playSentence(1);
-    realClick("#barInner");
-    await waitFor(() => state().fullOn, { timeout: 6000, desc: "展开" });
     await seekTo(30);
     const t0 = state().ct;
-    realClick("#fullFwd30");
-    const t1 = await waitFor(() => (state().ct > t0 + 25 ? state().ct : null), { timeout: 8000, desc: "前进 30 秒" });
-    realClick("#fullBack15");
-    await waitFor(() => state().ct < t1 - 12, { timeout: 8000, desc: "后退 15 秒" });
+    realClick("#barFwd10");
+    const t1 = await waitFor(() => (state().ct > t0 + 8 ? state().ct : null), { timeout: 8000, desc: "前进 10 秒" });
+    realClick("#barBack10");
+    await waitFor(() => state().ct < t1 - 8, { timeout: 8000, desc: "回退 10 秒" });
   }, { timeout: 12000 });
 
-  T("E 播放器", "E4", "全屏: 语速循环切换, 标签与滑块、音频三者一致", [
+  T("E 播放器", "E4", "播放器语速循环切换, 标签与音频一致", [
     "连续点 3 次语速",
   ], async () => {
     await openEpisode(S.data.expected.mainId);
     await playSentence(10);
-    realClick("#barInner");
-    await waitFor(() => state().fullOn, { timeout: 6000, desc: "展开" });
     const seen = [];
     for (let i = 0; i < 3; i++) {
-      realClick("#fullRate");
+      realClick("#rateCtl");
       await sleep(300);
       seen.push(state().rate);
-      near(state().rate, parseFloat($("#rate").value), 0.001, "滑块与语速");
+      near(state().rate, parseFloat($("#rate").value), 0.001, "内部值与语速");
     }
     eq(new Set(seen).size, 3, `三次点击语速应各不相同: ${fmt(seen)}`);
-    assert(/×/.test($("#fullRateVal").textContent), "语速标签格式");
+    assert(/×/.test($("#rateVal").textContent), "语速标签格式");
   }, { timeout: 12000 });
 
-  T("E 播放器", "E5", "全屏: 按住拖进度条能连续跳转", [
+  T("E 播放器", "E5", "底部进度条: 按住拖动能连续跳转", [
     "在进度条 60% 按下 → 拖到 30% → 松开",
   ], async () => {
     await openEpisode(S.data.expected.mainId);
     await playSentence(10);
-    realClick("#barInner");
-    await waitFor(() => state().fullOn, { timeout: 6000, desc: "展开" });
-    const box = rect("#fullBar");
+    const box = rect("#barTrack");
     const y = Math.round(box.y + box.height / 2);
     const dur = state().dur;
     assert(dur > 60, `音频时长异常 ${dur}`);
@@ -954,32 +965,27 @@
     eq(state().paused, false, "拖拽不该导致暂停");
   }, { timeout: 12000 });
 
-  T("E 播放器", "E6", "全屏: 点进度条 80% 位置直接跳过去", [
+  T("E 播放器", "E6", "底部进度条: 点 80% 位置直接跳过去", [
     "点进度条 80% 处",
   ], async () => {
     await openEpisode(S.data.expected.mainId);
     await playSentence(10);
-    realClick("#barInner");
-    await waitFor(() => state().fullOn, { timeout: 6000, desc: "展开" });
-    const box = rect("#fullBar");
+    const box = rect("#barTrack");
     const dur = state().dur;
     D.clickAt(Math.round(box.x + box.width * 0.8), Math.round(box.y + box.height / 2));
     await waitFor(() => state().ct > dur * 0.72 && state().ct < dur * 0.9, { timeout: 8000, desc: "点击跳转" });
   }, { timeout: 12000 });
 
-  T("E 播放器", "E7", "全屏: 「读这一集」收起播放器并回到正文", [
-    "全屏播放器 → 点「读这一集」",
+  T("E 播放器", "E7", "字号与行距统一收纳到设置页", [
+    "播放器 → 打开设置 → 检查阅读选项",
   ], async () => {
     await openEpisode(S.data.expected.mainId);
-    await playSentence(10);
-    realClick("#barInner");
-    await waitFor(() => state().fullOn, { timeout: 6000, desc: "展开" });
-    await seekTo(30);
-    realClick("#fullToEp");
-    await waitFor(() => !state().fullOn && state().showing === "reader", { timeout: 10000, desc: "回到正文" });
-    const top = $("#article").getBoundingClientRect().top;
-    assert(top < innerHeight, `正文不在视口内(top=${top})`);
-    eq(state().paused, false, "不该打断播放");
+    realClick("#playerSettingsBtn");
+    await waitFor(() => $("#settings").open, { timeout: 3000, desc: "设置弹窗打开" });
+    for (const sel of ["#fs", "#leading", "#theme"]) assert($(sel), `设置页缺少 ${sel}`);
+    assert(!$("#settings #rate"), "当下需要的播放语速不应收进全局阅读设置");
+    realClick("#settingsClose");
+    await waitFor(() => !$("#settings").open, { timeout: 3000, desc: "设置弹窗关闭" });
   }, { timeout: 12000 });
 
   T("E 播放器", "E8", "换一集播放: 播放器切集, 底部标题跟随", [
@@ -994,19 +1000,20 @@
     await waitFor(() => (state().src || "").includes(ep2.id), { timeout: 12000, desc: "音频切到第二集" });
     assert($("#barTitle").textContent.trim().length > 0, "底部标题为空");
     assert($("#barTitle").textContent.trim().slice(0, 6) === ep2.title.trim().slice(0, 6), `底部标题未切换: ${$("#barTitle").textContent}`);
-    await realClick("#playBtn");
+    await realClick("#barPlay");
   }, { timeout: 12000 });
 
-  T("E 播放器", "E9", "✕ 停止并收起: 音频停止、播放条消失", [
-    "点播放条上的 ✕",
+  T("E 播放器", "E9", "播放器不提供误触性关闭入口", [
+    "播放中 → 检查无可见 X 且切回列表后仍常驻",
   ], async () => {
     await openEpisode(S.data.expected.shortId);
     await playSentence(1);
-    realClick("#barClose");
-    await waitFor(() => !state().barOn, { timeout: 6000, desc: "播放条收起" });
-    const s = state();
-    eq(s.audio ? s.paused : true, true, "音频应停止");
-    eq(s.hasPlayer, false, "hasPlayer 应移除");
+    eq(getComputedStyle($("#barClose")).display, "none", "关闭播放器按钮应隐藏");
+    assert(!$("#barInner button").textContent.includes("✕"), "播放器主行不应有 X");
+    realClick("#back");
+    await waitFor(() => state().showing === "list", { timeout: 5000, desc: "回到列表" });
+    eq(state().barOn, true, "播放器应继续常驻");
+    eq(state().hasPlayer, true, "hasPlayer 应保留");
   }, { timeout: 12000 });
 
   // ---------------- F 设置与持久化
@@ -1050,9 +1057,7 @@
       await openEpisode(id);
       await playSentence(1);
       // 用真实进度条跳到 30 秒(用户拖进度的路径), 再等应用把位置写进 localStorage
-      realClick("#barInner");
-      await waitFor(() => state().fullOn, { timeout: 6000, desc: "展开全屏" });
-      const box = rect("#fullBar");
+      const box = rect("#barTrack");
       D.clickAt(Math.round(box.x + box.width * 0.5), Math.round(box.y + box.height / 2));
       await waitFor(() => state().ct > 20, { timeout: 6000, desc: "跳到 30 秒附近" });
       const saved = await waitFor(() => {
@@ -1080,9 +1085,7 @@
     if (!isResumed()) {
       await openEpisode(id);
       await playSentence(1);
-      realClick("#barInner");
-      await waitFor(() => state().fullOn, { timeout: 6000, desc: "展开全屏" });
-      const box = rect("#fullBar");
+      const box = rect("#barTrack");
       D.clickAt(Math.round(box.x + box.width * 0.5), Math.round(box.y + box.height / 2));
       await waitFor(() => state().ct > 20, { timeout: 6000, desc: "跳到 30 秒附近" });
       await waitFor(() => {
@@ -1191,41 +1194,40 @@
     assert(g.width > 24 && g.height > 24, "导入按钮过小");
   }, { timeout: 12000, phase: "mobile" });
 
-  T("H 移动端", "H2", "390×844 正文: 隐藏导入框, 工具栏不重叠不溢出", [
-    "手机视口进入正文 → 检查 header/toolbar",
+  T("H 移动端", "H2", "390×844 正文: 无顶部浮窗, 迷你播放器贴在底部导航上方", [
+    "手机视口进入正文 → 检查迷你播放器与底部导航",
   ], async () => {
     await openEpisode(S.data.expected.mainId);
     eq(getComputedStyle($("#url")).display, "none", "阅读模式应隐藏导入框");
-    const t = await rect("#epTitle");
-    const tb = await rect(".toolbar");
-    assert(tb.y >= t.bottom - 2, "工具栏与标题重叠");
+    assert(!$(".toolbar"), "不应有正文顶部浮动工具栏");
+    const settled = await waitFor(() => {
+      const bar = rect("#bar"), nav = rect("#appNav");
+      return bar && nav && bar.bottom <= nav.y + 2 ? { bar, nav } : null;
+    }, { timeout: 2500, desc: "迷你播放器入场动画结束" });
+    const { bar, nav } = settled;
+    assert(bar.height >= 64 && bar.height <= 90, `迷你播放器高度异常 ${bar.height}`);
+    assert(bar.bottom <= nav.y + 2, `播放器应在底部导航上方: ${fmt({ bar, nav })}`);
     const d = document.documentElement;
     assert(d.scrollWidth <= d.clientWidth + 1, `正文横向溢出 ${d.scrollWidth}`);
-    const boxes = $$(".toolbar > *").map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0);
-    for (let i = 0; i < boxes.length; i++)
-      for (let j = i + 1; j < boxes.length; j++) {
-        const a = boxes[i], b = boxes[j];
-        const ox = Math.min(a.right, b.right) - Math.max(a.left, b.left);
-        const oy = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
-        assert(!(ox > 3 && oy > 3), `工具栏第 ${i}/${j} 个控件重叠 (${fmt([ox | 0, oy | 0])})`);
-      }
   }, { timeout: 12000, phase: "mobile" });
 
-  T("H 移动端", "H3", "390×844 全屏播放器: 元素都在视口内", [
-    "手机视口播放 → 展开全屏",
+  T("H 移动端", "H3", "390×844 学习面板: 从同一播放器原位展开且元素在视口内", [
+    "手机视口打开正文 → 点「学习」",
   ], async () => {
     await openEpisode(S.data.expected.shortId);
-    await playSentence(1);
-    realClick("#barInner");
-    await waitFor(() => state().fullOn, { timeout: 6000, desc: "展开全屏" });
+    realClick("#learningToggle");
+    await waitFor(() => state().fullOn, { timeout: 6000, desc: "展开学习面板" });
+    await waitFor(() => rect("#bar").bottom <= innerHeight + 1, { timeout: 2500, desc: "学习面板入场动画结束" });
     const d = document.documentElement;
-    assert(d.scrollWidth <= d.clientWidth + 1, `全屏横向溢出 ${d.scrollWidth}`);
-    for (const sel of ["#fullArt", "#fullTitle", "#fullBar", "#fullCtl", "#fullTimes"]) {
+    assert(d.scrollWidth <= d.clientWidth + 1, `展开后横向溢出 ${d.scrollWidth}`);
+    for (const sel of ["#bar", "#barCover", "#barTitle", "#barTrack", "#barPlay", "#learningPanel", "#locateBtn", "#mobileRateCtl", "#learningClose"]) {
       const r = await rect(sel);
       assert(r.y >= -1, `${sel} 顶部超出视口: ${r.y}`);
       assert(r.bottom <= innerHeight + 1, `${sel} 底部超出视口: ${r.bottom} > ${innerHeight}`);
     }
-    realClick("#fullDown");
+    eq(getComputedStyle($("#playerScrim")).display, "block", "展开后应有背景遮罩");
+    realClick("#learningClose");
+    await waitFor(() => !state().fullOn, { timeout: 3000, desc: "收起学习面板" });
   }, { timeout: 12000, phase: "mobile" });
 
   T("H 移动端", "H4", "390×844 释义卡: 不超出屏幕, 内容可滚动", [
@@ -1404,7 +1406,7 @@
     eq(s.audioCount, 1, "audio 元素数量");
     eq(s.cur, "3", "高亮应停在所点句");
     eq(s.paused, false, "应仍在播放");
-    await realClick("#playBtn");
+    await realClick("#barPlay");
   }, { timeout: 12000 });
 
   T("J 细节", "J5", "整轮下来页面没有 console.error / 未捕获异常", [
@@ -1416,7 +1418,12 @@
   // ------------------------------------------------------------ 内部工具
   async function clickWord(word) {
     const sel = word ? `#article .w[data-w="${CSS.escape(word)}"]:not(.marked)` : "#article .w:not(.marked)";
-    const found = D.point(sel);
+    // 应用会把 I / a / the 这类虚词的点击留给「播这一句」，
+    // 因此不能随手取第一个 .w；要选与产品规则一致的可查词。
+    const target = word
+      ? $(sel)
+      : $$(sel).find((el) => String(el.dataset.w || "").replace(/[^A-Za-z'’\-]/g, "").length >= 4);
+    const found = D.point(target);
     assert(found, `正文里找不到可点的词 ${word || "(任意)"}`);
     const el = document.elementFromPoint(found.x, found.y)?.closest(".w");
     D.clickAt(found.x, found.y);
@@ -1430,8 +1437,8 @@
   /** 把"输入类"的临时状态清干净: 输入框、选区、滚动位置。
    *  上一条用例往输入框里打过字、或把页面滚到过别处, 不该影响下一条。 */
   function resetTransient() {
-    // 全屏播放器是 fixed 覆盖层: 上一条用例如果留在展开状态, 会挡住整页
-    if ($("#full").classList.contains("on") && typeof closeFull === "function") closeFull();
+    // 手机学习面板是 fixed 底部层: 上一条用例如果留在展开状态, 会挡住整页
+    if ($("#bar").classList.contains("learning-open") && typeof closeFull === "function") closeFull();
     const url = $("#url");
     if (url) {
       url.value = "";
