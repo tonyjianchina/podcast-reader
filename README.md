@@ -84,6 +84,10 @@ uv run et import "https://www.youtube.com/watch?v=xxxxx"
 # 看看有哪些内容
 uv run et list
 
+# 给视频站导入的单集补标题/封面/上传日期(不带 id: 补所有「未命名单集」或缺封面的)
+# 只改元数据列, 不碰状态、音频、句子、段落; 可以在服务运行时执行
+uv run et refresh-meta [episode_id ...]
+
 # 单独试一张释义卡
 uv run et define ubiquitous "Smartphones have become ubiquitous in modern life."
 
@@ -121,9 +125,10 @@ uv run et retranscribe <episode_id>
 
 | 来源 | 状态 |
 |---|---|
-| 任意 RSS 地址 | ✅ |
-| Apple Podcasts 分享链接 | ✅ 走 iTunes Lookup API |
-| YouTube / Bilibili 链接 | ✅ 交给 yt-dlp |
+| 任意 RSS 地址 | ✅ 导入 feed 里最新一集 |
+| Apple Podcasts 节目链接(`.../id123456`) | ✅ 走 iTunes Lookup API,导入最新一集 |
+| Apple Podcasts 单集链接(`...?i=<trackId>`) | ✅ 用 Lookup 找到该集的 guid,在 feed 里精确选中这一集(依次比 guid、音频地址、标题+日期);feed 里没有就用 Lookup 给的音频地址;都找不到直接报错,不会退化成最新一集 |
+| YouTube / Bilibili 链接 | ✅ 交给 yt-dlp;导入时先读元数据,带上真实标题、封面(高清 https 缩略图)、上传日期、时长,同一频道归到同一个节目下 |
 | 小宇宙分享链接 | ⚠️ 尽力解析,失败时请手动填 RSS |
 | Spotify | ❌ 拿不到 feed,请手动填 RSS |
 

@@ -68,20 +68,29 @@ async def import_url(url: str) -> dict[str, Any]:
     target = await resolve.resolve(url)
 
     if target.kind == "feed":
-        entry = resolve.latest_entry(target.url)
+        # Apple 单集链接已在 resolve 里精确选好那一集; 其余情况取最新一集
+        entry = target.entry or resolve.latest_entry(target.url)
         show_id = db.upsert_show(target.url, target.title, target.author, target.image_url)
         audio_url = entry.get("audio_url")
         if not audio_url:
-            raise ValueError("这个 feed 的最新一集没有音频地址")
+            raise ValueError("这一集在 feed 里没有音频地址")
     else:
-        show_id = db.upsert_show(
-            f"direct:{target.url}", target.title or "直接导入", target.author, target.image_url
-        )
+        if target.show_key:
+            # 视频站: 同一频道归到同一个节目下
+            show_id = db.upsert_show(
+                target.show_key, target.show_title or "直接导入", target.author, target.image_url
+            )
+        else:
+            show_id = db.upsert_show(
+                f"direct:{target.url}", target.title or "直接导入", target.author, target.image_url
+            )
         audio_url = target.audio_url or target.url
         entry = {
             "guid": target.guid or audio_url,
             "title": target.title or "未命名单集",
             "published_at": target.published_at,
+            "image_url": target.episode_image,
+            "duration_sec": target.duration_sec,
         }
 
     episode_id = db.create_episode(
@@ -91,6 +100,8 @@ async def import_url(url: str) -> dict[str, Any]:
         published_at=entry.get("published_at"),
         source_url=url,
         audio_url=audio_url,
+        image_url=entry.get("image_url"),
+        duration_sec=entry.get("duration_sec"),
     )
     await _queue.put(episode_id)
     return {"episode_id": episode_id, "title": entry["title"], "state": "queued"}

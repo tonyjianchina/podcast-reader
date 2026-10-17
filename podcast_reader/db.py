@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS episodes (
     audio_path   TEXT,
     audio_url    TEXT,
     duration_sec REAL,
+    image_url    TEXT,
     state        TEXT NOT NULL,
     error        TEXT,
     created_at   TEXT,
@@ -132,6 +133,15 @@ def db():
 def init() -> None:
     with db() as conn:
         conn.executescript(SCHEMA)
+        _migrate(conn)
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    """给老库补列。CREATE TABLE IF NOT EXISTS 不会给已存在的表加新列。"""
+    cols = {r["name"] for r in conn.execute("PRAGMA table_info(episodes)")}
+    if "image_url" not in cols:
+        # 单集封面(视频缩略图等)。列表接口里 show_image = COALESCE(单集封面, 节目封面)
+        conn.execute("ALTER TABLE episodes ADD COLUMN image_url TEXT")
 
 
 # ---------------------------------------------------------------- shows
@@ -164,7 +174,14 @@ STATES = ("pending", "downloading", "transcribing", "segmenting", "translating",
 
 
 def create_episode(
-    show_id: str, guid: str, title: str, published_at: str | None, source_url: str, audio_url: str
+    show_id: str,
+    guid: str,
+    title: str,
+    published_at: str | None,
+    source_url: str,
+    audio_url: str,
+    image_url: str | None = None,
+    duration_sec: float | None = None,
 ) -> str:
     with db() as conn:
         row = conn.execute(
@@ -176,10 +193,46 @@ def create_episode(
         ts = now()
         conn.execute(
             "INSERT INTO episodes (id, show_id, guid, title, published_at, source_url,"
-            " audio_url, state, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
-            (eid, show_id, guid, title, published_at, source_url, audio_url, "pending", ts, ts),
+            " audio_url, image_url, duration_sec, state, created_at, updated_at)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+            (eid, show_id, guid, title, published_at, source_url, audio_url, image_url,
+             duration_sec, "pending", ts, ts),
         )
         return eid
+
+
+def update_episode_meta(
+    episode_id: str,
+    title: str | None = None,
+    published_at: str | None = None,
+    duration_sec: float | None = None,
+    image_url: str | None = None,
+    only_missing_duration: bool = True,
+) -> None:
+    """补元数据(et refresh-meta 用)。只动这几列, 不碰状态/音频/句子。
+
+    时长默认只在为空时补: 下载后 ffprobe 的实测值比站点报的准(见 fetch.py)。
+    """
+    dur_sql = "COALESCE(duration_sec, ?)" if only_missing_duration else "COALESCE(?, duration_sec)"
+    with db() as conn:
+        conn.execute(
+            "UPDATE episodes SET title = COALESCE(?, title), published_at = COALESCE(?, published_at),"
+            f" duration_sec = {dur_sql}, image_url = COALESCE(?, image_url) WHERE id = ?",
+            (title, published_at, duration_sec, image_url, episode_id),
+        )
+
+
+def update_show_meta(show_id: str, title: str | None, image_url: str | None) -> None:
+    with db() as conn:
+        conn.execute(
+            "UPDATE shows SET title = COALESCE(?, title), image_url = COALESCE(?, image_url) WHERE id = ?",
+            (title, image_url, show_id),
+        )
+
+
+def show_episode_count(show_id: str) -> int:
+    with db() as conn:
+        return conn.execute("SELECT COUNT(*) FROM episodes WHERE show_id = ?", (show_id,)).fetchone()[0]
 
 
 def set_state(episode_id: str, state: str, error: str | None = None) -> None:
@@ -216,7 +269,8 @@ def set_audio(episode_id: str, audio_path: str, duration_sec: float | None) -> N
 def get_episode(episode_id: str) -> dict[str, Any] | None:
     with db() as conn:
         row = conn.execute(
-            "SELECT e.*, s.title AS show_title, s.image_url AS show_image, s.feed_url"
+            "SELECT e.*, s.title AS show_title, COALESCE(e.image_url, s.image_url) AS show_image,"
+            " s.feed_url"
             " FROM episodes e LEFT JOIN shows s ON s.id = e.show_id WHERE e.id = ?",
             (episode_id,),
         ).fetchone()
@@ -226,7 +280,7 @@ def get_episode(episode_id: str) -> dict[str, Any] | None:
 def list_episodes() -> list[dict[str, Any]]:
     with db() as conn:
         rows = conn.execute(
-            "SELECT e.*, s.title AS show_title, s.image_url AS show_image,"
+            "SELECT e.*, s.title AS show_title, COALESCE(e.image_url, s.image_url) AS show_image,"
             " (SELECT COUNT(*) FROM segments g WHERE g.episode_id = e.id) AS seg_count,"
             " (SELECT COUNT(*) FROM paragraphs p WHERE p.episode_id = e.id) AS para_count"
             " FROM episodes e LEFT JOIN shows s ON s.id = e.show_id"
