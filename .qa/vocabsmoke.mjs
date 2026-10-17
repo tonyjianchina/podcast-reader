@@ -3,8 +3,9 @@
  *   ego-browser nodejs < .qa/vocabsmoke.mjs
  *
  * 只测这一轮新加的东西:
- *   1. 头部有「生词本」入口, 点开默认是不分组的列表(新加的在前, 同词只一条, 每条带出处);
- *      卡片上直接有缓存里的语境义 / 词根拆解, 没缓存的显示「点击查看释义」;
+ *   1. 头部有「生词本」入口, 点开默认是不分组的紧凑列表(新加的在前, 同词只一条);
+ *      每行直接有缓存里的语境义(不放词根、不放单集标题), 没缓存的显示「点击查看释义」,
+ *      而且不会自动去查(只有点开才查);
  *      切到「按单集」后按单集分组, 选择记在 localStorage(et.vocabMode), 刷新后仍生效;
  *      上一版存的 'date' 会被迁移成 'list';
  *   2. 同一个词标过两次只出现一条(带 ×2);
@@ -73,11 +74,14 @@ const lview = await page.evaluate(async () => {
     groups: document.querySelectorAll("#vocab .vg").length,
     apiOrder: (api.items || []).map((x) => x.lemma),
     apiSorted: (api.items || []).every((x, i, a) => i === 0 || String(a[i - 1].created_at) >= String(x.created_at) || /Z$/.test(String(x.created_at))),
+    epTitles: (api.items || []).map((x) => x.episode_title).filter(Boolean),
+    explainReqs: window.__reqs.filter((u) => u.includes("/explain")),
     words: [...document.querySelectorAll("#vocab .vlist .vitem")].map((li) => ({
       lemma: li.querySelector(".vword .vw").textContent.trim(),
       count: li.querySelector(".vcount")?.textContent.trim() || "",
       sense: li.querySelector(".vsense")?.textContent.trim() || "",
-      roots: li.querySelector(".vroots")?.textContent.replace(/\s+/g, " ").trim() || "",
+      roots: !!li.querySelector(".vroots"),
+      text: li.textContent,
       pending: li.querySelector(".vpending")?.textContent.trim() || "",
       ep: li.querySelector(".vep")?.textContent.trim() || "",
       jump: li.querySelector('[data-act="jump"]')?.textContent.trim() || "",
@@ -93,24 +97,24 @@ ok("同一个词只出一条", new Set(lemmas).size === lemmas.length);
 const lclunky = lview.words.find((w) => w.lemma === "clunky");
 ok("重复标记显示 ×2", !!lclunky && lclunky.count === "×2", lclunky ? lclunky.count : "clunky 不见了");
 ok("有缓存的词直接显示语境义", !!lclunky && /笨重/.test(lclunky.sense), lclunky ? lclunky.sense : "");
-const lexp = lview.words.find((w) => w.lemma === "expansion");
-ok("有词根的词显示词根拆解", !!lexp && /词根拆解/.test(lexp.roots) && /ex-/.test(lexp.roots), lexp ? lexp.roots : "");
+ok("列表里不放词根拆解", lview.words.every((w) => !w.roots && !/词根拆解/.test(w.text)));
 ok("没缓存的词显示「点击查看释义」", lview.words.some((w) => !w.sense && w.pending === "点击查看释义"),
    lview.words.map((w) => w.lemma + ":" + (w.sense ? "义" : w.pending || "?")).join(" "));
-ok("每条都标了出处(列表模式)", lview.words.every((w) => /^出自 .+/.test(w.ep)));
-ok("每条都有「跳到原文这一句」和移除", lview.words.every((w) => /跳到原文这一句/.test(w.jump) && w.del));
+ok("行里不显示单集标题", lview.epTitles.length > 0 && lview.words.every((w) => !w.ep && !lview.epTitles.some((t) => w.text.includes(t))));
+ok("每行都有「原文 →」和移除", lview.words.every((w) => /原文/.test(w.jump) && w.del));
+ok("打开列表不会自动查释义(不花钱)", lview.explainReqs.length === 0, lview.explainReqs.join(","));
 
 // 没缓存的词点开: 走原来的释义卡(测试实例没配 key, 只断言卡片打开、走的是同一个接口)
 const pendingLemma = (lview.words.find((w) => !w.sense) || {}).lemma;
 if (pendingLemma) {
   await page.evaluate((lemma) => {
     const li = [...document.querySelectorAll("#vocab .vitem")].find((x) => x.querySelector(".vword .vw").textContent.trim() === lemma);
-    li.querySelector(".vpending").click();
+    li.querySelector(".vs").click();  // 点行内任意位置都该打开释义卡
   }, pendingLemma);
   await page.waitForTimeout(1200);
   const pc = await page.evaluate(() => ({ open: document.getElementById("pop").open, word: document.getElementById("pWord").textContent,
     reqs: window.__reqs.filter((u) => u.includes("/explain")) }));
-  ok("「点击查看释义」打开释义卡", pc.open && pc.word === pendingLemma && pc.reqs.some((u) => u.includes("/vocab/" + pendingLemma + "/explain")),
+  ok("点整行(未缓存的词)打开释义卡", pc.open && pc.word === pendingLemma && pc.reqs.some((u) => u.includes("/vocab/" + pendingLemma + "/explain")),
      JSON.stringify({ open: pc.open, word: pc.word }));
   await page.evaluate(() => document.getElementById("pop").close());
   await page.waitForTimeout(200);

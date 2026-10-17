@@ -159,29 +159,23 @@
   .expand-hint::after{content:'展开标题'}.vg-source[open] .expand-hint::after{content:'收起标题'}
   .vg-h .vc{display:block;margin-top:5px;font-size:12px;color:var(--muted)}
   .vg-h .vgo{min-height:44px;font-size:12px;color:var(--accent-ink);background:var(--cur);border:0;border-radius:12px;padding:8px 12px;white-space:nowrap;display:flex;gap:5px;align-items:center}
-  .vg ul,.vlist{list-style:none;padding:0;margin:0}.vlist{display:grid;gap:12px}
-  .vitem{min-width:0}
-  .vlist .vitem{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:16px 20px 10px}
-  .vg .vitem{padding:16px 2px 8px;border-bottom:1px solid var(--line)}.vg .vitem:last-child{border-bottom:0;padding-bottom:0}
-  .vtop{display:flex;align-items:center;gap:10px}
-  .vword{flex:0 1 auto;min-width:0;display:flex;align-items:center;min-height:44px;border:0;background:none;padding:0;text-align:left;color:inherit;cursor:pointer}
-  .vw{font:600 27px/1.15 var(--font-read);letter-spacing:-.01em;overflow-wrap:anywhere}
-  .vcount{flex:none;font-size:11px;font-weight:650;color:var(--accent-ink);background:var(--cur);border-radius:999px;padding:2px 8px}
-  .vdel{margin-left:auto;flex:none;width:36px;height:36px;display:grid;place-items:center;border:0;border-radius:10px;background:none;color:var(--muted);opacity:.45}
-  .vdel:hover,.vdel:focus-visible{opacity:1;color:var(--danger);background:var(--surface-2)}
-  .vmeta{font-size:12px;color:var(--muted)}.vmeta .ipa{font:14px var(--font-read)}
-  .vsense{margin-top:8px;font-size:17px;line-height:1.6;color:var(--ink);font-weight:500}
-  .vsense small{display:block;margin-top:2px;font-size:11px;font-weight:400;color:var(--muted)}
-  .vpending{margin-top:4px;min-height:36px;padding:0;border:0;background:none;color:var(--muted);font-size:13px;text-decoration:underline dotted;text-underline-offset:4px;cursor:pointer}
-  .vroots{margin-top:12px;background:var(--surface-2);border-radius:14px;padding:10px 14px;font-size:14px;line-height:1.6}
-  .vroots-l{display:block;font-size:11px;font-weight:650;color:var(--accent-ink)}
-  .vroots b{font:600 15px var(--font-read)}.vplus{color:var(--muted);margin:0 6px}.vmem{margin-top:3px;font-size:13px;color:var(--muted)}
-  .vs{font:13px/1.55 var(--font-read);color:var(--muted);margin-top:12px;padding-left:10px;border-left:2px solid var(--line);
-    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.vs .vw{font:inherit;letter-spacing:0;color:var(--ink);background:var(--mark)}
-  .vfoot{display:flex;align-items:center;gap:12px;margin-top:6px;font-size:11.5px;color:var(--muted)}
-  .vsrc{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.vj{flex:none;margin-left:auto}
-  .vj{min-height:32px;padding:0;border:0;background:none;color:var(--muted);font-size:11.5px;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px;cursor:pointer}
-  .vj:hover,.vj:focus-visible{color:var(--accent-ink)}
+  .vg ul,.vlist{list-style:none;padding:0;margin:0}
+  .vitem{min-width:0;padding:9px 2px 10px;border-bottom:1px solid var(--line);cursor:pointer}
+  .vitem:last-child{border-bottom:0}.vitem:hover{background:color-mix(in srgb,var(--surface-2) 45%,transparent)}
+  .vtop{display:flex;align-items:baseline;gap:8px;min-width:0}
+  .vword{flex:0 1 auto;min-width:0;border:0;background:none;padding:0;text-align:left;color:inherit;cursor:pointer}
+  .vw{font:600 19px/1.25 var(--font-read);overflow-wrap:anywhere}
+  .vcount{flex:none;font-size:10.5px;font-weight:650;color:var(--accent-ink);background:var(--cur);border-radius:999px;padding:1px 6px}
+  .vmeta{flex:0 1 auto;min-width:0;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.vmeta .ipa{font:13px var(--font-read)}
+  .vdel{margin:-5px -4px -5px auto;align-self:center;flex:none;width:30px;height:30px;display:grid;place-items:center;border:0;border-radius:8px;background:none;color:var(--muted);opacity:.4}
+  .vdel .icon{width:15px;height:15px}.vdel:hover,.vdel:focus-visible{opacity:1;color:var(--danger);background:var(--surface-2)}
+  .vsense{margin-top:1px;font-size:14px;line-height:1.4;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .vpending{margin-top:1px;padding:0;border:0;background:none;color:var(--muted);font-size:13px;line-height:1.45;text-decoration:underline dotted;text-underline-offset:3px;cursor:pointer}
+  .vline{display:flex;align-items:baseline;gap:10px;margin-top:1px;min-width:0}
+  .vs{flex:1;min-width:0;font:12.5px/1.4 var(--font-read);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .vs .vw{font:inherit;color:var(--ink);background:var(--mark)}
+  .vj{flex:none;margin-left:auto;padding:0;border:0;background:none;color:var(--muted);font-size:12px;line-height:1.45;cursor:pointer}
+  .vj:hover,.vj:focus-visible{color:var(--accent-ink);text-decoration:underline}
   .vocab-tools{display:flex;align-items:center;gap:12px}
   .vmode{display:inline-flex;gap:3px;padding:3px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
   .vmode button{min-height:40px;padding:0 14px;border:0;border-radius:11px;background:none;color:var(--muted);font-size:13px;font-weight:600;white-space:nowrap}
@@ -294,9 +288,9 @@
     ul.eps{grid-template-columns:1fr;gap:10px}.episode-card{min-height:124px;grid-template-columns:64px minmax(0,1fr) 16px;padding:12px;border-radius:18px;gap:12px}.episode-cover{width:64px;border-radius:13px}.t{font-size:14px}
     .reader-head{padding:0 4px;margin-bottom:18px}.reader-head .eyebrow{display:none}h2.ep{font-size:27px;line-height:1.2;-webkit-line-clamp:2;margin-top:0}#epMeta{font-size:12px}
     article{border:0;border-radius:0;margin:0 -14px;padding:25px 18px 80px;background:color-mix(in srgb,var(--surface) 72%,transparent);box-shadow:none}
-    .vg{border-radius:18px;padding:16px}.vg-h{gap:8px;align-items:flex-start}.vg-h .vt{font-size:15px}.vg-h .vgo{font-size:12px;padding:8px}.vlist .vitem{padding:14px 16px 8px;border-radius:18px}.vw{font-size:25px}.vsense{font-size:16px}
+    .vg{border-radius:18px;padding:16px}.vg-h{gap:8px;align-items:flex-start}.vg-h .vt{font-size:15px}.vg-h .vgo{font-size:12px;padding:8px}.vg .vitem{padding:9px 0 10px}.vsense{-webkit-line-clamp:1}
     #vocabIntro .eyebrow,#vocabIntro .heading-count{display:none}
-    #vocabIntro{flex-wrap:wrap;align-items:flex-start;gap:12px}.vocab-tools,.vmode{width:100%}.vmode button{flex:1;min-height:42px}
+    #vocabIntro{flex-wrap:wrap;align-items:flex-start;gap:10px}#vocabIntro p{display:none}.vocab-tools,.vmode{width:100%}.vmode button{flex:1;min-height:36px}
     dialog{position:fixed;max-width:none!important;width:100%;margin:0;inset:auto 0 0;border-radius:24px 24px 0 0;border-width:1px 0 0;padding:0 0 var(--safe-bottom);max-height:88dvh}
     .dialog-head{padding:18px 20px 14px}.dialog-body{padding:4px 20px 20px}dialog menu{padding:14px 20px}dialog menu button{width:100%}
     #bar{left:0;right:0;bottom:calc(66px + var(--safe-bottom));border-radius:18px 18px 0 0;overflow:visible;background:var(--surface)}
@@ -597,8 +591,6 @@ let vocabMode = (() => {
   }catch{ return 'list' }
 })();
 let vocabReq = 0;
-// 没有释义缓存的词, 滚进视口时顺序补查几条(每次进生词本最多 budget 条, 一次只查一个)
-const vocabLazy = { budget: 0, queue: [], busy: false, io: null };
 
 // ===== 播放器状态 =====
 // 关键设计: 音频属于「playing.id」这一集, 而不是「current」(正在读的那一集)。
@@ -1757,7 +1749,6 @@ function showVocab(pushHistory){
   if(pushHistory !== false && location.hash !== '#vocab') history.pushState({}, '', '#vocab');
   // 每次都重新拉: 你刚在正文里标完词, 切过来就该看见它(读缓存会显得"没记住")
   $('#vocab').innerHTML = '<div class="empty">加载生词本…</div>';
-  vocabLazy.budget = 3; vocabLazy.queue.length = 0;
   refreshVocab();
 }
 
@@ -1808,40 +1799,28 @@ function fmtDay(ts){
   return m ? `${+m[2]}/${+m[3]}` : '';
 }
 
-/** 卡片上的释义区: 语境义为主, 词根拆解放在浅底色块里; 没缓存就只给一个低调的入口。 */
-function vocabBriefHtml(it){
-  const b = it.brief;
-  if(!b || !b.sense_here) return `<button class="vpending" data-act="open">点击查看释义</button>`;
-  const r = b.roots && (b.roots.parts || []).length ? b.roots : null;
-  return `<div class="vsense">${esc(b.sense_here)}${b.exact === false ? '<small>来自另一句的释义, 点开看这一句的</small>' : ''}</div>
-    ${r ? `<div class="vroots"><span class="vroots-l">词根拆解</span>${r.parts.map(p =>
-      `<b>${esc(p.part)}</b> ${esc(p.meaning)}`).join('<span class="vplus">+</span>')}${r.memory ? `<div class="vmem">${esc(r.memory)}</div>` : ''}</div>` : ''}`;
-}
-
+/** 一行生词: 词 + ×N + 音标词性 / 一行语境义(没缓存就给低调入口) / 一行原句 + 原文链接。
+ *  词根拆解、出处单集都不放在列表里(点开释义卡能看到), 为的是一屏多放几个词。 */
 function vocabItemHtml(it){
   const b = it.brief || {};
   const meta = [b.ipa ? `<span class="ipa">${esc(b.ipa)}</span>` : '', esc(b.pos || '')].filter(Boolean).join(' · ');
-  // 底栏一行: 左边「几号加入 · 出自哪集」(太长就省略), 右边低调的跳转链接
-  const src = [
-    fmtDay(it.created_at) ? `${fmtDay(it.created_at)} 加入` : '',
-    vocabState.mode === 'list' && it.episode_title ? `<span class="vep">出自 ${esc(it.episode_title)}</span>` : '',
-  ].filter(Boolean).join(' · ');
-  const jump = it.seg_idx != null && it.episode_id ? `<button class="vj" data-act="jump">跳到原文这一句 →</button>` : '';
-  const foot = src || jump ? `<span class="vsrc"${it.episode_title ? ` title="${esc(it.episode_title)}"` : ''}>${src}</span>${jump}` : '';
+  const sense = b.sense_here
+    ? `<div class="vsense" title="${esc(b.sense_here)}">${esc(b.sense_here)}</div>`
+    : `<button class="vpending" data-act="open">点击查看释义</button>`;
+  const jump = it.seg_idx != null && it.episode_id ? `<button class="vj" data-act="jump" title="跳到原文这一句">原文 →</button>` : '';
   return `<li class="vitem${it.brief ? '' : ' nobrief'}" data-id="${it.id}">
     <div class="vtop">
-      <button class="vword" data-act="open" aria-label="查看 ${esc(it.lemma)} 的完整释义"><span class="vw">${esc(it.lemma)}</span></button>
+      <button class="vword" data-act="open" aria-label="查看 ${esc(it.lemma)} 的释义"><span class="vw">${esc(it.lemma)}</span></button>
       ${it.count > 1 ? `<span class="vcount" title="标过 ${it.count} 次">×${it.count}</span>` : ''}
+      ${meta ? `<span class="vmeta">${meta}</span>` : ''}
       <button class="vdel" data-act="del" title="移出生词本" aria-label="把 ${esc(it.lemma)} 移出生词本">${icon('trash',true)}</button>
     </div>
-    ${meta ? `<div class="vmeta">${meta}</div>` : ''}
-    ${vocabBriefHtml(it)}
-    ${it.sentence ? `<div class="vs">${sentWithWord(it.sentence, it.surface)}</div>` : ''}
-    ${foot ? `<div class="vfoot">${foot}</div>` : ''}
+    ${sense}
+    ${it.sentence || jump ? `<div class="vline"><span class="vs">${sentWithWord(it.sentence, it.surface)}</span>${jump}</div>` : ''}
   </li>`;
 }
 
-/** 点开 / 补查拿到完整释义后, 把摘要写回这条并只重画这一张卡片。 */
+/** 点开拿到完整释义后, 把摘要写回这条并只重画这一行。 */
 function fillBrief(it, p){
   if(!p || !p.sense_here) return;
   const roots = p.roots || {};
@@ -1857,39 +1836,7 @@ function fillBrief(it, p){
   if(fresh) bindVocabItem(fresh);
 }
 
-function observeLazyBriefs(el){
-  if(vocabLazy.io){ vocabLazy.io.disconnect(); vocabLazy.io = null }
-  if(!('IntersectionObserver' in window) || vocabLazy.budget <= 0) return;
-  vocabLazy.io = new IntersectionObserver(entries => entries.forEach(e => {
-    if(!e.isIntersecting) return;
-    vocabLazy.io.unobserve(e.target);
-    const it = vocabState.items.find(x => x.id === +e.target.dataset.id);
-    if(it && !it.brief && !vocabLazy.queue.some(x => x.id === it.id)){ vocabLazy.queue.push(it); pumpLazyBriefs() }
-  }));
-  el.querySelectorAll('.vitem.nobrief').forEach(li => vocabLazy.io.observe(li));
-}
 
-async function pumpLazyBriefs(){
-  if(vocabLazy.busy) return;
-  vocabLazy.busy = true;
-  try{
-    while(vocabLazy.queue.length && vocabLazy.budget > 0 && $('#vocab').style.display !== 'none'){
-      const it = vocabLazy.queue.shift();
-      if(it.brief) continue;
-      vocabLazy.budget--;
-      const q = new URLSearchParams();
-      if(it.episode_id) q.set('episode_id', it.episode_id);
-      if(it.seg_idx != null) q.set('seg_idx', String(it.seg_idx));
-      try{
-        const r = await api('/vocab/' + encodeURIComponent(it.lemma) + '/explain?' + q.toString());
-        fillBrief(it, r && r.payload);
-      }catch{
-        // 查不了(没配 key / 上游挂了 / 离线)就别一条条接着撞, 等用户自己点开
-        vocabLazy.budget = 0; vocabLazy.queue.length = 0;
-      }
-    }
-  }finally{ vocabLazy.busy = false }
-}
 
 function renderVocab(){
   const el = $('#vocab');
@@ -1918,7 +1865,6 @@ function renderVocab(){
       <ul>${g.items.map(vocabItemHtml).join('')}</ul>
     </div>`).join('');
   bindVocab(el);
-  observeLazyBriefs(el);
   syncViewChrome();
   $('#status').textContent = `${vocabState.total} 个生词`
     + (vocabState.raw > vocabState.total ? `(共标过 ${vocabState.raw} 次)` : '');
@@ -1928,7 +1874,8 @@ function bindVocabItem(li){
   const id = +li.dataset.id;
   const it = vocabState.items.find(x => x.id === id);
   if(!it) return;
-  li.querySelectorAll('[data-act="open"]').forEach(b => { b.onclick = () => openVocabWord(it) });
+  // 整行可点开释义卡; 移除 / 跳原文这两个按钮自己处理, 不连带打开
+  li.onclick = ev => { if(!ev.target.closest('[data-act="del"],[data-act="jump"]')) openVocabWord(it) };
   const j = li.querySelector('[data-act="jump"]');
   if(j) j.onclick = ev => { ev.stopPropagation(); jumpToWord(it) };
   li.querySelector('[data-act="del"]').onclick = async () => {
