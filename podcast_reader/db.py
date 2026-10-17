@@ -14,6 +14,7 @@ import sqlite3
 import time
 import uuid
 from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone
 from typing import Any, Iterable
 
 from .config import DB_PATH
@@ -509,6 +510,86 @@ def vocab_grouped() -> dict[str, Any]:
         reverse=True,
     )
     return {
+        "groups": groups,
+        "total": sum(len(g["items"]) for g in groups),
+        "raw": len(rows),
+    }
+
+
+try:
+    from zoneinfo import ZoneInfo
+
+    USER_TZ: Any = ZoneInfo("Asia/Shanghai")
+except Exception:  # 没有 tzdata 的环境: 上海不搞夏令时, 固定 +8 等价
+    USER_TZ = timezone(timedelta(hours=8), "Asia/Shanghai")
+
+
+def _parse_ts(ts: Any) -> datetime | None:
+    """created_at 转成带时区的时间。
+
+    now() 写的是 time.strftime 的**本机本地时间、不带时区**(不是 UTC), 所以无时区的值
+    按本机时区解释; 带 Z / +08:00 之类时区的值(导入的旧数据)按它自己的时区。
+    """
+    s = str(ts or "").strip()
+    if not s:
+        return None
+    try:
+        dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return dt.astimezone() if dt.tzinfo is None else dt
+
+
+def vocab_grouped_by_date() -> dict[str, Any]:
+    """生词本: 按「加入的那一天」(用户时区 Asia/Shanghai) 分组, 新的一天在前、组内新的在前。
+
+    同一天里同一个词标了多次(哪怕来自不同单集)只出一条, 留最新那条并计个数;
+    每条词带上它所属单集的 episode_id / episode_title, 前端用来显示出处和跳原文。
+    """
+    with db() as conn:
+        rows = conn.execute(
+            "SELECT v.id, v.lemma, v.surface, v.sentence, v.episode_id, v.seg_idx,"
+            " v.note, v.created_at, e.title AS episode_title FROM vocab_items v"
+            " LEFT JOIN episodes e ON e.id = v.episode_id"
+        ).fetchall()
+
+    floor = datetime.min.replace(tzinfo=timezone.utc)
+    stamped = [(_parse_ts(r["created_at"]), r) for r in rows]
+    # 不靠 SQL 的字符串排序: 万一混进带时区的值, 字符串序和真实先后会不一致
+    stamped.sort(key=lambda x: (x[0] or floor, int(x[1]["id"])), reverse=True)
+
+    keys = _explained_keys()
+    groups: list[dict[str, Any]] = []
+    where: dict[str, dict[str, Any]] = {}
+    for dt, r in stamped:
+        day = dt.astimezone(USER_TZ).strftime("%Y-%m-%d") if dt else ""
+        lemma = str(r["lemma"] or "").strip().lower()
+        if not lemma:
+            continue
+        if day not in where:
+            where[day] = {"date": day, "items": []}
+            groups.append(where[day])
+        hit = next((it for it in where[day]["items"] if it["lemma"] == lemma), None)
+        if hit:
+            hit["count"] += 1
+            continue
+        where[day]["items"].append(
+            {
+                "id": int(r["id"]),
+                "lemma": lemma,
+                "surface": r["surface"] or lemma,
+                "sentence": r["sentence"] or "",
+                "seg_idx": r["seg_idx"],
+                "note": r["note"] or "",
+                "created_at": r["created_at"],
+                "count": 1,
+                "explanation_key": keys.get(lemma),
+                "episode_id": r["episode_id"],
+                "episode_title": (r["episode_title"] or "(原单集已删除)") if r["episode_id"] else "",
+            }
+        )
+    return {
+        "by": "date",
         "groups": groups,
         "total": sum(len(g["items"]) for g in groups),
         "raw": len(rows),

@@ -3,7 +3,8 @@
  *   ego-browser nodejs < .qa/vocabsmoke.mjs
  *
  * 只测这一轮新加的东西:
- *   1. 头部有「生词本」入口, 点开能看到按单集分组的清单;
+ *   1. 头部有「生词本」入口, 点开默认按「加入日期」分组(新的一天在前, 每条带出处单集);
+ *      切到「按单集」后按单集分组, 且这个选择记在 localStorage(et.vocabMode), 刷新后仍生效;
  *   2. 同一个词标过两次只出现一条(带 ×2);
  *   3. 点一个词能打开释义卡, 且走 /vocab/<词>/explain 命中缓存(不再花钱查);
  *   4. 「跳到原文这一句」落到原文, 并且当前句正好是标这个词的那一句;
@@ -24,6 +25,10 @@ const ok = (name, pass, extra = "") => {
 };
 
 try {
+await page.goto(BASE + "/");
+await page.waitForTimeout(800);
+// 从「没选过分组方式」开始, 才能测到默认是按日期(分组方式在页面加载时读 localStorage)
+await page.evaluate(() => localStorage.removeItem("et.vocabMode"));
 await page.goto(BASE + "/");
 await page.waitForTimeout(1500);
 
@@ -49,12 +54,49 @@ const btn = await page.evaluate(() => {
   const b = document.getElementById("vocabBtn");
   if (!b) return { found: false };
   const r = b.getBoundingClientRect();
-  return { found: true, visible: r.width > 0 && r.height > 0, ver: document.getElementById("ver").textContent };
+  return { found: true, visible: r.width > 0 && r.height > 0, ver: document.getElementById("ver")?.textContent || "" };
 });
 ok("头部有「生词本」入口", btn.found && btn.visible, JSON.stringify(btn));
 
 await page.evaluate(() => document.getElementById("vocabBtn").click());
 await page.waitForTimeout(1000);
+
+// ---------- 1b. 默认按日期分组 ----------
+const dview = await page.evaluate(() => ({
+  pressed: document.querySelector('#vocabMode [aria-pressed="true"]')?.dataset.mode,
+  groups: [...document.querySelectorAll("#vocab .vg")].map((g) => ({
+    date: g.dataset.date || "",
+    head: g.querySelector(".vt").textContent.trim(),
+    sub: g.querySelector(".vc").textContent.trim(),
+    words: [...g.querySelectorAll(".vitem")].map((li) => ({
+      lemma: li.querySelector(".vw").textContent.trim(),
+      meta: li.querySelector(".vmeta").textContent.trim(),
+      ep: li.querySelector(".vep")?.textContent.trim() || "",
+      jump: !!li.querySelector('[data-act="jump"]'),
+    })),
+  })),
+}));
+const dates = dview.groups.map((g) => g.date);
+ok("默认按日期分组", dview.pressed === "date" && dview.groups.length > 0 && dates.every(Boolean), JSON.stringify(dates));
+ok("日期新的在前", dates.every((d, i) => i === 0 || dates[i - 1] > d), dates.join(","));
+ok("日期标签是中文(今天/昨天/M月D日 周X)",
+   dview.groups.every((g) => /^(今天|昨天|(\d{4}年)?\d{1,2}月\d{1,2}日 周[日一二三四五六])$/.test(g.head)),
+   dview.groups.map((g) => g.head).join(" | "));
+ok("组内同词只出一条(按日期)", dview.groups.every((g) => new Set(g.words.map((w) => w.lemma)).size === g.words.length));
+ok("每条都标了出自哪一集", dview.groups.every((g) => g.words.every((w) => /^出自 · .+/.test(w.ep))));
+const ddup = dview.groups.flatMap((g) => g.words).find((w) => w.lemma === "clunky");
+ok("按日期时重复标记也标次数", !!ddup && /×2/.test(ddup.meta), ddup ? ddup.meta : "clunky 不见了");
+ok("按日期时每条也能跳回原文", dview.groups.flatMap((g) => g.words).every((w) => w.jump));
+
+// ---------- 1c. 切到按单集, 选择要记住 ----------
+await page.evaluate(() => document.querySelector('#vocabMode [data-mode="episode"]').click());
+await page.waitForTimeout(1000);
+const sw = await page.evaluate(() => ({
+  pressed: document.querySelector('#vocabMode [aria-pressed="true"]')?.dataset.mode,
+  saved: localStorage.getItem("et.vocabMode"),
+  dated: document.querySelectorAll("#vocab .vg[data-date]").length,
+}));
+ok("切到按单集并记进 localStorage", sw.pressed === "episode" && sw.saved === "episode" && sw.dated === 0, JSON.stringify(sw));
 
 const view = await page.evaluate(() => ({
   vocabShown: getComputedStyle(document.getElementById("vocab")).display !== "none",
@@ -176,9 +218,13 @@ const reloaded = await page.evaluate(() => ({
   vocabShown: getComputedStyle(document.getElementById("vocab")).display !== "none",
   groups: document.querySelectorAll("#vocab .vg").length,
   status: document.getElementById("status").textContent,
+  mode: document.querySelector('#vocabMode [aria-pressed="true"]')?.dataset.mode,
+  dated: document.querySelectorAll("#vocab .vg[data-date]").length,
   errors: window.__smoke || [],
 }));
 ok("刷新后仍在生词本(#vocab 可书签/可刷新)", reloaded.vocabShown && reloaded.groups > 0, JSON.stringify(reloaded).slice(0, 140));
+ok("刷新后仍是上次选的按单集", reloaded.mode === "episode" && reloaded.dated === 0, `mode=${reloaded.mode} dated=${reloaded.dated}`);
+await page.evaluate(() => localStorage.removeItem("et.vocabMode"));
 ok("全程无 JS 报错", reloaded.errors.length === 0, reloaded.errors.join(" | "));
 
 const failed = results.filter((r) => !r.pass);

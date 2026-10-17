@@ -241,12 +241,20 @@ async def vocab() -> list[dict[str, Any]]:
 
 
 @app.get("/vocab/grouped")
-async def vocab_grouped() -> dict[str, Any]:
-    """生词本页面用: 按单集分组 + 组内按词去重 + 带释义缓存 key。
+async def vocab_grouped(by: str = "episode") -> dict[str, Any]:
+    """生词本页面用: 分组 + 组内按词去重 + 带释义缓存 key。
+
+    - 默认 (不带参数 / by=episode): 按单集分组, 响应结构和以前完全一样;
+    - by=date: 按「加入生词本的那一天」(Asia/Shanghai) 分组, 新的一天在前,
+      每条词自带 episode_id / episode_title, 组上带 date(YYYY-MM-DD)。
 
     刻意不返回释义正文 —— 生词会越攒越多, 一次把所有释义塞进响应是白流量;
     点开某个词时再走 /vocab/{lemma}/explain 精确命中缓存。
     """
+    if by == "date":
+        return db.vocab_grouped_by_date()
+    if by not in ("", "episode"):
+        raise HTTPException(400, "by 只能是 episode 或 date")
     return db.vocab_grouped()
 
 

@@ -168,6 +168,11 @@
   .vj{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-size:12px;color:var(--accent-ink);border:0;background:none;padding:4px 0}
   .vmore{position:relative;flex:none}.vmore summary{list-style:none;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;color:var(--muted);cursor:pointer}
   .vmore summary::-webkit-details-marker{display:none}.vmore[open] summary{background:var(--surface-2)}
+  .vocab-tools{display:flex;align-items:center;gap:12px}
+  .vmode{display:inline-flex;gap:3px;padding:3px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+  .vmode button{min-height:40px;padding:0 14px;border:0;border-radius:11px;background:none;color:var(--muted);font-size:13px;font-weight:600;white-space:nowrap}
+  .vmode button[aria-pressed="true"]{background:var(--cur);color:var(--accent-ink)}
+  .vep{font-size:12px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .vx{position:absolute;right:0;top:48px;z-index:5;white-space:nowrap;min-height:44px;padding:10px 14px;display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--danger);box-shadow:var(--shadow)}
 
   /* Definition card */
@@ -279,6 +284,7 @@
     article{border:0;border-radius:0;margin:0 -14px;padding:25px 18px 80px;background:color-mix(in srgb,var(--surface) 72%,transparent);box-shadow:none}
     .vg{border-radius:18px;padding:16px}.vg-h{gap:8px;align-items:flex-start}.vg-h .vt{font-size:15px}.vg-h .vgo{font-size:12px;padding:8px}.vitem{gap:4px}.vs{font-size:14px}
     #vocabIntro .eyebrow,#vocabIntro .heading-count{display:none}
+    #vocabIntro{flex-wrap:wrap;align-items:flex-start;gap:12px}.vocab-tools,.vmode{width:100%}.vmode button{flex:1;min-height:42px}
     dialog{position:fixed;max-width:none!important;width:100%;margin:0;inset:auto 0 0;border-radius:24px 24px 0 0;border-width:1px 0 0;padding:0 0 var(--safe-bottom);max-height:88dvh}
     .dialog-head{padding:18px 20px 14px}.dialog-body{padding:4px 20px 20px}dialog menu{padding:14px 20px}dialog menu button{width:100%}
     #bar{left:0;right:0;bottom:calc(66px + var(--safe-bottom));border-radius:18px 18px 0 0;overflow:visible;background:var(--surface)}
@@ -350,8 +356,14 @@
         <span class="heading-count">Tap to read</span>
       </div>
       <div id="vocabIntro" class="screen-heading" hidden>
-        <div><div class="eyebrow">Words worth keeping</div><h2>生词本</h2><p>按单集回到词语第一次打动你的语境。</p></div>
-        <span class="heading-count" id="vocabTotal"></span>
+        <div><div class="eyebrow">Words worth keeping</div><h2>生词本</h2><p>按日期回顾, 或按单集回到词语第一次打动你的语境。</p></div>
+        <div class="vocab-tools">
+          <span class="heading-count" id="vocabTotal"></span>
+          <div class="vmode" id="vocabMode" role="group" aria-label="生词分组方式">
+            <button type="button" data-mode="date" aria-pressed="true">按日期</button>
+            <button type="button" data-mode="episode" aria-pressed="false">按单集</button>
+          </div>
+        </div>
       </div>
       <div id="list"><div class="empty">还没有内容。<br>在上方粘贴一条播客链接开始。</div></div>
       <div id="vocab"></div>
@@ -562,7 +574,10 @@ let finding = false;   // 正在定位播放头时, 暂时关掉跨句检测, �
 // 用模块级变量而不是 hash 参数: hash 已经是 #<episode_id> 了, 再往里塞句子号
 // 会和"刷新/分享链接"那套逻辑打架(见文件末尾的 popstate/hashchange)。
 let jumpSeg = null;              // 待定位的句子号, 消费一次就清掉
-const vocabState = { groups: [], items: [], total: 0, raw: 0, err: '' };
+const vocabState = { groups: [], items: [], total: 0, raw: 0, err: '', mode: 'date' };
+// 生词本分组方式: 'date'(默认, 按加入那天) / 'episode'(按单集)。记在 localStorage 里, 下次进来还是它。
+let vocabMode = (() => { try{ return localStorage.getItem('et.vocabMode') === 'episode' ? 'episode' : 'date' }catch{ return 'date' } })();
+let vocabReq = 0;
 
 // ===== 播放器状态 =====
 // 关键设计: 音频属于「playing.id」这一集, 而不是「current」(正在读的那一集)。
@@ -1725,13 +1740,17 @@ function showVocab(pushHistory){
 }
 
 async function loadVocab(){
+  const req = ++vocabReq, mode = vocabMode;
   try{
-    const d = await api('/vocab/grouped');
+    const d = await api('/vocab/grouped?by=' + mode);
+    if(req !== vocabReq) return;
+    vocabState.mode = mode;
     vocabState.groups = d.groups || [];
     // 单集号在分组上, 不在词条上。**必须就地把 episode_id 补进每一条**, 而不是只补
     // 拍平出来的那份副本 —— 渲染用的是 g.items, 拍平那份只给点击处理用; 两份不同步时
     // 症状是"判断条件里的字段是 undefined, 链接/跳转静默不出现"(实测踩过)。
-    vocabState.groups.forEach(g => (g.items || []).forEach(it => {
+    // 按日期分组时单集信息本来就在每一条上(组上没有), 那就别拿 undefined 覆盖掉。
+    if(mode === 'episode') vocabState.groups.forEach(g => (g.items || []).forEach(it => {
       it.episode_id = g.episode_id;
       it.episode_title = g.episode_title;
     }));
@@ -1743,6 +1762,7 @@ async function loadVocab(){
     vocabState.raw = d.raw||0;
     vocabState.err = '';
   }catch(err){
+    if(req !== vocabReq) return;
     vocabState.groups = []; vocabState.items = []; vocabState.total = 0;
     vocabState.err = err.message;
   }
@@ -1765,9 +1785,31 @@ function fmtDay(ts){
   return m ? `${+m[2]}/${+m[3]}` : '';
 }
 
+const VOCAB_TZ = 'Asia/Shanghai';
+/** 用户时区(上海)的今天, YYYY-MM-DD。不用 new Date().getDate(): 浏览器时区不一定是上海。 */
+function tzToday(){
+  try{ return new Intl.DateTimeFormat('en-CA', {timeZone: VOCAB_TZ, year:'numeric', month:'2-digit', day:'2-digit'}).format(new Date()) }
+  catch{ return new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10) }
+}
+/** 后端给的 YYYY-MM-DD(已经是上海时区的日子) -> { main: '今天' / '10月15日 周四', sub } */
+function vocabDayLabel(ymd){
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(ymd || ''));
+  if(!m) return { main: '日期未知', sub: '' };
+  const [y, mo, d] = [+m[1], +m[2], +m[3]];
+  const t = /^(\d{4})-(\d{2})-(\d{2})$/.exec(tzToday());
+  const dayNo = (yy, mm, dd) => Math.round(Date.UTC(yy, mm - 1, dd) / 864e5);
+  const diff = t ? dayNo(+t[1], +t[2], +t[3]) - dayNo(y, mo, d) : NaN;
+  const wk = '周' + '日一二三四五六'[new Date(Date.UTC(y, mo - 1, d)).getUTCDay()];
+  const full = (t && +t[1] === y ? '' : y + '年') + `${mo}月${d}日 ${wk}`;
+  if(diff === 0) return { main: '今天', sub: full };
+  if(diff === 1) return { main: '昨天', sub: full };
+  return { main: full, sub: '' };
+}
+
 function vocabItemHtml(it){
+  const byDate = vocabState.mode === 'date';
   const meta = [
-    fmtDay(it.created_at),
+    byDate ? '' : fmtDay(it.created_at),
     it.explanation_key ? '已查阅' : '',
     it.count > 1 ? '×' + it.count : '',
   ].filter(Boolean).join(' · ');
@@ -1775,6 +1817,7 @@ function vocabItemHtml(it){
     <div class="vmain">
       <button class="vword" data-act="open" aria-label="查看 ${esc(it.lemma)} 的释义"><span class="vw">${esc(it.lemma)}</span>${icon('chevron-right',true)}</button>
       <div class="vmeta">${meta}</div>
+      ${byDate && it.episode_title ? `<div class="vep" title="${esc(it.episode_title)}">出自 · ${esc(it.episode_title)}</div>` : ''}
       ${it.sentence ? `<div class="vs">${sentWithWord(it.sentence, it.surface)}</div>` : ''}
       ${it.seg_idx != null && it.episode_id ? `<button class="vj" data-act="jump">回到原句${icon('chevron-right',true)}</button>` : ''}
     </div>
@@ -1797,7 +1840,16 @@ function renderVocab(){
     $('#status').textContent = '生词本为空';
     return;
   }
-  el.innerHTML = vocabState.groups.map(g => `
+  syncVocabMode();
+  el.innerHTML = vocabState.mode === 'date' ? vocabState.groups.map(g => {
+    const day = vocabDayLabel(g.date);
+    return `
+    <div class="vg vg-day" data-date="${esc(g.date || '')}">
+      <div class="vg-h">
+        <div class="vg-source"><span class="vt">${esc(day.main)}</span><span class="vc">${day.sub ? esc(day.sub) + ' · ' : ''}${g.items.length} 个词</span></div>
+      </div>
+      <ul>${g.items.map(vocabItemHtml).join('')}</ul>
+    </div>`}).join('') : vocabState.groups.map(g => `
     <div class="vg">
       <div class="vg-h">
         <details class="vg-source"><summary><span class="vt">${esc(g.episode_title || '(未知单集)')}</span><span class="vc">${g.items.length} 个词 · <span class="expand-hint"></span></span></summary></details>
@@ -1839,6 +1891,23 @@ function bindVocab(el){
 document.addEventListener('click', e => {
   document.querySelectorAll('.vmore[open]').forEach(menu => { if(!menu.contains(e.target)) menu.open = false });
 });
+
+function syncVocabMode(){
+  document.querySelectorAll('#vocabMode [data-mode]').forEach(b =>
+    b.setAttribute('aria-pressed', String(b.dataset.mode === vocabMode)));
+}
+document.querySelectorAll('#vocabMode [data-mode]').forEach(b => {
+  b.onclick = () => {
+    const mode = b.dataset.mode === 'episode' ? 'episode' : 'date';
+    if(mode === vocabMode) return;
+    vocabMode = mode;
+    try{ localStorage.setItem('et.vocabMode', mode) }catch(e){}
+    syncVocabMode();
+    $('#vocab').innerHTML = '<div class="empty">加载生词本…</div>';
+    refreshVocab();
+  };
+});
+syncVocabMode();
 
 /** 重新拉清单并重画(只在生词本视图里重画, 别把正文顶掉)。 */
 async function refreshVocab(){
