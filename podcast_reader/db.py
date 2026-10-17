@@ -14,7 +14,7 @@ import sqlite3
 import time
 import uuid
 from contextlib import contextmanager
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Any, Iterable
 
 from .config import DB_PATH
@@ -451,7 +451,7 @@ def _explained_keys() -> dict[str, str]:
     return {str(r["lemma"]).strip().lower(): r["key"] for r in rows}
 
 
-def vocab_grouped() -> dict[str, Any]:
+def vocab_grouped(brief: bool = False) -> dict[str, Any]:
     """生词本: 按单集分组, 组内同一个词只出一条并附上它在释义缓存里的 key。
 
     为什么不在 SQL 里 GROUP BY: 要顺带拿到 e.title / e.published_at / e.source_url,
@@ -509,6 +509,13 @@ def vocab_grouped() -> dict[str, Any]:
         key=lambda g: (max((it["created_at"] or "") for it in g["items"]), g["episode_id"] or ""),
         reverse=True,
     )
+    if brief:
+        for g in groups:
+            for it in g["items"]:
+                it["episode_id"] = g["episode_id"]
+            _attach_briefs(g["items"])
+            for it in g["items"]:
+                del it["episode_id"]
     return {
         "groups": groups,
         "total": sum(len(g["items"]) for g in groups),
@@ -516,16 +523,8 @@ def vocab_grouped() -> dict[str, Any]:
     }
 
 
-try:
-    from zoneinfo import ZoneInfo
-
-    USER_TZ: Any = ZoneInfo("Asia/Shanghai")
-except Exception:  # 没有 tzdata 的环境: 上海不搞夏令时, 固定 +8 等价
-    USER_TZ = timezone(timedelta(hours=8), "Asia/Shanghai")
-
-
 def _parse_ts(ts: Any) -> datetime | None:
-    """created_at 转成带时区的时间。
+    """created_at 转成带时区的时间(只用来排先后)。
 
     now() 写的是 time.strftime 的**本机本地时间、不带时区**(不是 UTC), 所以无时区的值
     按本机时区解释; 带 Z / +08:00 之类时区的值(导入的旧数据)按它自己的时区。
@@ -540,11 +539,75 @@ def _parse_ts(ts: Any) -> datetime | None:
     return dt.astimezone() if dt.tzinfo is None else dt
 
 
-def vocab_grouped_by_date() -> dict[str, Any]:
-    """生词本: 按「加入的那一天」(用户时区 Asia/Shanghai) 分组, 新的一天在前、组内新的在前。
+def _brief(payload: dict[str, Any] | None, exact: bool) -> dict[str, Any] | None:
+    """释义缓存 -> 生词卡片上直接显示的那几项。"""
+    if not isinstance(payload, dict) or not payload.get("sense_here"):
+        return None
+    roots = payload.get("roots") if isinstance(payload.get("roots"), dict) else {}
+    parts = [
+        {"part": str(p.get("part") or ""), "meaning": str(p.get("meaning") or "")}
+        for p in (roots.get("parts") or []) if isinstance(p, dict) and p.get("part")
+    ]
+    return {
+        "sense_here": str(payload.get("sense_here") or ""),
+        "pos": str(payload.get("pos") or ""),
+        "ipa": str(payload.get("ipa") or ""),
+        "lemma": str(payload.get("lemma") or ""),
+        "roots": {"parts": parts, "memory": str(roots.get("memory") or "")}
+        if roots.get("available") and parts else None,
+        # exact=False: 这个词有缓存, 但不是这一句的(语境义可能略有出入)
+        "exact": exact,
+    }
 
-    同一天里同一个词标了多次(哪怕来自不同单集)只出一条, 留最新那条并计个数;
-    每条词带上它所属单集的 episode_id / episode_title, 前端用来显示出处和跳原文。
+
+def _attach_briefs(items: list[dict[str, Any]]) -> None:
+    """给每条生词就地挂上 brief。**只读 explanations 缓存**, 不触发任何外部调用。
+
+    命中顺序和 /vocab/{lemma}/explain 一致: 先用 seg_idx 现取的原句算 key,
+    再用标记时存下的句子; 都不中就退回这个词最近的一份缓存(exact=False)。
+    """
+    if not items:
+        return
+    lemmas = sorted({it["lemma"] for it in items})
+    with db() as conn:
+        by_key: dict[str, Any] = {}
+        latest: dict[str, Any] = {}
+        for i in range(0, len(lemmas), 500):
+            chunk = lemmas[i : i + 500]
+            rows = conn.execute(
+                "SELECT key, lemma, payload_json FROM explanations WHERE lower(lemma) IN"
+                f" ({','.join('?' * len(chunk))}) ORDER BY rowid",
+                chunk,
+            ).fetchall()
+            for r in rows:
+                try:
+                    payload = json.loads(r["payload_json"] or "null")
+                except ValueError:
+                    continue
+                by_key[r["key"]] = payload
+                latest[str(r["lemma"]).strip().lower()] = payload
+        for it in items:
+            seg_text = ""
+            if it.get("episode_id") and it.get("seg_idx") is not None:
+                row = conn.execute(
+                    "SELECT text FROM segments WHERE episode_id = ? AND idx = ?",
+                    (it["episode_id"], int(it["seg_idx"])),
+                ).fetchone()
+                seg_text = str(row["text"] or "") if row else ""
+            hit = None
+            for sent in (seg_text, it.get("sentence") or ""):
+                if sent.strip():
+                    hit = by_key.get(explanation_key(it["lemma"], sent))
+                    if hit:
+                        break
+            it["brief"] = _brief(hit, True) if hit else _brief(latest.get(it["lemma"]), False)
+
+
+def vocab_list() -> dict[str, Any]:
+    """生词本默认视图: 不分组的一整条清单, 按加入时间新的在前。
+
+    同一个词标了多次(哪怕来自不同单集)只出一条, 留最新那条并计个数;
+    每条带上出处单集和 brief(释义缓存摘要, 只读缓存)。
     """
     with db() as conn:
         rows = conn.execute(
@@ -559,41 +622,31 @@ def vocab_grouped_by_date() -> dict[str, Any]:
     stamped.sort(key=lambda x: (x[0] or floor, int(x[1]["id"])), reverse=True)
 
     keys = _explained_keys()
-    groups: list[dict[str, Any]] = []
+    items: list[dict[str, Any]] = []
     where: dict[str, dict[str, Any]] = {}
-    for dt, r in stamped:
-        day = dt.astimezone(USER_TZ).strftime("%Y-%m-%d") if dt else ""
+    for _, r in stamped:
         lemma = str(r["lemma"] or "").strip().lower()
         if not lemma:
             continue
-        if day not in where:
-            where[day] = {"date": day, "items": []}
-            groups.append(where[day])
-        hit = next((it for it in where[day]["items"] if it["lemma"] == lemma), None)
-        if hit:
-            hit["count"] += 1
+        if lemma in where:
+            where[lemma]["count"] += 1
             continue
-        where[day]["items"].append(
-            {
-                "id": int(r["id"]),
-                "lemma": lemma,
-                "surface": r["surface"] or lemma,
-                "sentence": r["sentence"] or "",
-                "seg_idx": r["seg_idx"],
-                "note": r["note"] or "",
-                "created_at": r["created_at"],
-                "count": 1,
-                "explanation_key": keys.get(lemma),
-                "episode_id": r["episode_id"],
-                "episode_title": (r["episode_title"] or "(原单集已删除)") if r["episode_id"] else "",
-            }
-        )
-    return {
-        "by": "date",
-        "groups": groups,
-        "total": sum(len(g["items"]) for g in groups),
-        "raw": len(rows),
-    }
+        where[lemma] = {
+            "id": int(r["id"]),
+            "lemma": lemma,
+            "surface": r["surface"] or lemma,
+            "sentence": r["sentence"] or "",
+            "seg_idx": r["seg_idx"],
+            "note": r["note"] or "",
+            "created_at": r["created_at"],
+            "count": 1,
+            "explanation_key": keys.get(lemma),
+            "episode_id": r["episode_id"],
+            "episode_title": (r["episode_title"] or "(原单集已删除)") if r["episode_id"] else "",
+        }
+        items.append(where[lemma])
+    _attach_briefs(items)
+    return {"by": "list", "items": items, "total": len(items), "raw": len(rows)}
 
 
 # ------------------------------------------------------ explanations

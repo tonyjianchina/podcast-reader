@@ -241,21 +241,22 @@ async def vocab() -> list[dict[str, Any]]:
 
 
 @app.get("/vocab/grouped")
-async def vocab_grouped(by: str = "episode") -> dict[str, Any]:
-    """生词本页面用: 分组 + 组内按词去重 + 带释义缓存 key。
+async def vocab_grouped(by: str = "episode", brief: bool = False) -> dict[str, Any]:
+    """生词本页面用: 去重 + 带释义缓存 key。
 
     - 默认 (不带参数 / by=episode): 按单集分组, 响应结构和以前完全一样;
-    - by=date: 按「加入生词本的那一天」(Asia/Shanghai) 分组, 新的一天在前,
-      每条词自带 episode_id / episode_title, 组上带 date(YYYY-MM-DD)。
+      加 brief=1 时每条多一个 brief(见下);
+    - by=list: 不分组, items 按加入时间新的在前, 同一个词只出一条(×count),
+      每条自带 episode_id / episode_title 和 brief。(by=date 是上一版的叫法, 当 list 处理)
 
-    刻意不返回释义正文 —— 生词会越攒越多, 一次把所有释义塞进响应是白流量;
-    点开某个词时再走 /vocab/{lemma}/explain 精确命中缓存。
+    brief 是释义缓存里的「卡片摘要」(语境义 / 音标 / 词性 / 词根), **只读缓存、绝不调 DeepSeek**;
+    没缓存的词 brief 为 null, 点开时再走 /vocab/{lemma}/explain(那里才会花钱查并写缓存)。
     """
-    if by == "date":
-        return db.vocab_grouped_by_date()
+    if by in ("list", "date"):
+        return db.vocab_list()
     if by not in ("", "episode"):
-        raise HTTPException(400, "by 只能是 episode 或 date")
-    return db.vocab_grouped()
+        raise HTTPException(400, "by 只能是 episode 或 list")
+    return db.vocab_grouped(brief=brief)
 
 
 @app.get("/vocab/{lemma}/explain")

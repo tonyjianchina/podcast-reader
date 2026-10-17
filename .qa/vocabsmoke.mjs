@@ -3,8 +3,10 @@
  *   ego-browser nodejs < .qa/vocabsmoke.mjs
  *
  * 只测这一轮新加的东西:
- *   1. 头部有「生词本」入口, 点开默认按「加入日期」分组(新的一天在前, 每条带出处单集);
- *      切到「按单集」后按单集分组, 且这个选择记在 localStorage(et.vocabMode), 刷新后仍生效;
+ *   1. 头部有「生词本」入口, 点开默认是不分组的列表(新加的在前, 同词只一条, 每条带出处);
+ *      卡片上直接有缓存里的语境义 / 词根拆解, 没缓存的显示「点击查看释义」;
+ *      切到「按单集」后按单集分组, 选择记在 localStorage(et.vocabMode), 刷新后仍生效;
+ *      上一版存的 'date' 会被迁移成 'list';
  *   2. 同一个词标过两次只出现一条(带 ×2);
  *   3. 点一个词能打开释义卡, 且走 /vocab/<词>/explain 命中缓存(不再花钱查);
  *   4. 「跳到原文这一句」落到原文, 并且当前句正好是标这个词的那一句;
@@ -27,8 +29,8 @@ const ok = (name, pass, extra = "") => {
 try {
 await page.goto(BASE + "/");
 await page.waitForTimeout(800);
-// 从「没选过分组方式」开始, 才能测到默认是按日期(分组方式在页面加载时读 localStorage)
-await page.evaluate(() => localStorage.removeItem("et.vocabMode"));
+// 模拟上一版留下的 'date'(按日期分组已取消): 应迁移成默认的列表模式(加载时读 localStorage)
+await page.evaluate(() => localStorage.setItem("et.vocabMode", "date"));
 await page.goto(BASE + "/");
 await page.waitForTimeout(1500);
 
@@ -61,32 +63,58 @@ ok("头部有「生词本」入口", btn.found && btn.visible, JSON.stringify(bt
 await page.evaluate(() => document.getElementById("vocabBtn").click());
 await page.waitForTimeout(1000);
 
-// ---------- 1b. 默认按日期分组 ----------
-const dview = await page.evaluate(() => ({
-  pressed: document.querySelector('#vocabMode [aria-pressed="true"]')?.dataset.mode,
-  groups: [...document.querySelectorAll("#vocab .vg")].map((g) => ({
-    date: g.dataset.date || "",
-    head: g.querySelector(".vt").textContent.trim(),
-    sub: g.querySelector(".vc").textContent.trim(),
-    words: [...g.querySelectorAll(".vitem")].map((li) => ({
-      lemma: li.querySelector(".vw").textContent.trim(),
-      meta: li.querySelector(".vmeta").textContent.trim(),
+// ---------- 1b. 默认是不分组的列表 ----------
+const lview = await page.evaluate(async () => {
+  const api = await (await fetch("/vocab/grouped?by=list")).json();
+  return {
+    pressed: document.querySelector('#vocabMode [aria-pressed="true"]')?.dataset.mode,
+    saved: localStorage.getItem("et.vocabMode"),
+    hasList: !!document.querySelector("#vocab .vlist"),
+    groups: document.querySelectorAll("#vocab .vg").length,
+    apiOrder: (api.items || []).map((x) => x.lemma),
+    apiSorted: (api.items || []).every((x, i, a) => i === 0 || String(a[i - 1].created_at) >= String(x.created_at) || /Z$/.test(String(x.created_at))),
+    words: [...document.querySelectorAll("#vocab .vlist .vitem")].map((li) => ({
+      lemma: li.querySelector(".vword .vw").textContent.trim(),
+      count: li.querySelector(".vcount")?.textContent.trim() || "",
+      sense: li.querySelector(".vsense")?.textContent.trim() || "",
+      roots: li.querySelector(".vroots")?.textContent.replace(/\s+/g, " ").trim() || "",
+      pending: li.querySelector(".vpending")?.textContent.trim() || "",
       ep: li.querySelector(".vep")?.textContent.trim() || "",
-      jump: !!li.querySelector('[data-act="jump"]'),
+      jump: li.querySelector('[data-act="jump"]')?.textContent.trim() || "",
+      del: !!li.querySelector('[data-act="del"]'),
     })),
-  })),
-}));
-const dates = dview.groups.map((g) => g.date);
-ok("默认按日期分组", dview.pressed === "date" && dview.groups.length > 0 && dates.every(Boolean), JSON.stringify(dates));
-ok("日期新的在前", dates.every((d, i) => i === 0 || dates[i - 1] > d), dates.join(","));
-ok("日期标签是中文(今天/昨天/M月D日 周X)",
-   dview.groups.every((g) => /^(今天|昨天|(\d{4}年)?\d{1,2}月\d{1,2}日 周[日一二三四五六])$/.test(g.head)),
-   dview.groups.map((g) => g.head).join(" | "));
-ok("组内同词只出一条(按日期)", dview.groups.every((g) => new Set(g.words.map((w) => w.lemma)).size === g.words.length));
-ok("每条都标了出自哪一集", dview.groups.every((g) => g.words.every((w) => /^出自 · .+/.test(w.ep))));
-const ddup = dview.groups.flatMap((g) => g.words).find((w) => w.lemma === "clunky");
-ok("按日期时重复标记也标次数", !!ddup && /×2/.test(ddup.meta), ddup ? ddup.meta : "clunky 不见了");
-ok("按日期时每条也能跳回原文", dview.groups.flatMap((g) => g.words).every((w) => w.jump));
+  };
+});
+const lemmas = lview.words.map((w) => w.lemma);
+ok("旧的 'date' 迁移成列表模式", lview.pressed === "list" && lview.saved === "list", JSON.stringify({ p: lview.pressed, s: lview.saved }));
+ok("默认是不分组的列表", lview.hasList && lview.groups === 0 && lemmas.length > 0, `groups=${lview.groups} n=${lemmas.length}`);
+ok("列表顺序 = 接口顺序(新加的在前)", JSON.stringify(lemmas) === JSON.stringify(lview.apiOrder) && lview.apiSorted, lemmas.join(","));
+ok("同一个词只出一条", new Set(lemmas).size === lemmas.length);
+const lclunky = lview.words.find((w) => w.lemma === "clunky");
+ok("重复标记显示 ×2", !!lclunky && lclunky.count === "×2", lclunky ? lclunky.count : "clunky 不见了");
+ok("有缓存的词直接显示语境义", !!lclunky && /笨重/.test(lclunky.sense), lclunky ? lclunky.sense : "");
+const lexp = lview.words.find((w) => w.lemma === "expansion");
+ok("有词根的词显示词根拆解", !!lexp && /词根拆解/.test(lexp.roots) && /ex-/.test(lexp.roots), lexp ? lexp.roots : "");
+ok("没缓存的词显示「点击查看释义」", lview.words.some((w) => !w.sense && w.pending === "点击查看释义"),
+   lview.words.map((w) => w.lemma + ":" + (w.sense ? "义" : w.pending || "?")).join(" "));
+ok("每条都标了出处(列表模式)", lview.words.every((w) => /^出自 .+/.test(w.ep)));
+ok("每条都有「跳到原文这一句」和移除", lview.words.every((w) => /跳到原文这一句/.test(w.jump) && w.del));
+
+// 没缓存的词点开: 走原来的释义卡(测试实例没配 key, 只断言卡片打开、走的是同一个接口)
+const pendingLemma = (lview.words.find((w) => !w.sense) || {}).lemma;
+if (pendingLemma) {
+  await page.evaluate((lemma) => {
+    const li = [...document.querySelectorAll("#vocab .vitem")].find((x) => x.querySelector(".vword .vw").textContent.trim() === lemma);
+    li.querySelector(".vpending").click();
+  }, pendingLemma);
+  await page.waitForTimeout(1200);
+  const pc = await page.evaluate(() => ({ open: document.getElementById("pop").open, word: document.getElementById("pWord").textContent,
+    reqs: window.__reqs.filter((u) => u.includes("/explain")) }));
+  ok("「点击查看释义」打开释义卡", pc.open && pc.word === pendingLemma && pc.reqs.some((u) => u.includes("/vocab/" + pendingLemma + "/explain")),
+     JSON.stringify({ open: pc.open, word: pc.word }));
+  await page.evaluate(() => document.getElementById("pop").close());
+  await page.waitForTimeout(200);
+}
 
 // ---------- 1c. 切到按单集, 选择要记住 ----------
 await page.evaluate(() => document.querySelector('#vocabMode [data-mode="episode"]').click());
@@ -94,9 +122,11 @@ await page.waitForTimeout(1000);
 const sw = await page.evaluate(() => ({
   pressed: document.querySelector('#vocabMode [aria-pressed="true"]')?.dataset.mode,
   saved: localStorage.getItem("et.vocabMode"),
-  dated: document.querySelectorAll("#vocab .vg[data-date]").length,
+  list: document.querySelectorAll("#vocab .vlist").length,
+  sense: [...document.querySelectorAll("#vocab .vg .vsense")].map((x) => x.textContent.trim()).join("|"),
 }));
-ok("切到按单集并记进 localStorage", sw.pressed === "episode" && sw.saved === "episode" && sw.dated === 0, JSON.stringify(sw));
+ok("切到按单集并记进 localStorage", sw.pressed === "episode" && sw.saved === "episode" && sw.list === 0, JSON.stringify(sw).slice(0, 120));
+ok("按单集时卡片上也有释义", /笨重/.test(sw.sense), sw.sense.slice(0, 60));
 
 const view = await page.evaluate(() => ({
   vocabShown: getComputedStyle(document.getElementById("vocab")).display !== "none",
@@ -105,8 +135,8 @@ const view = await page.evaluate(() => ({
   groups: [...document.querySelectorAll("#vocab .vg")].map((g) => ({
     count: g.querySelector(".vc").textContent.trim(),
     words: [...g.querySelectorAll(".vitem")].map((li) => ({
-      lemma: li.querySelector(".vw").textContent.trim(),
-      meta: li.querySelector(".vmeta").textContent.trim(),
+      lemma: li.querySelector(".vword .vw").textContent.trim(),
+      meta: li.querySelector(".vcount")?.textContent.trim() || "",
       hasSent: !!li.querySelector(".vs"),
       sentMarked: !!li.querySelector(".vs .vw"),
       jump: !!li.querySelector('[data-act="jump"]'),
@@ -126,7 +156,7 @@ ok("状态栏显示总数", /个生词/.test(view.status), view.status);
 // ---------- 2. 点词 -> 释义卡(应命中缓存, 不再花钱) ----------
 await page.evaluate(() => {
   const li = [...document.querySelectorAll("#vocab .vitem")]
-    .find((x) => x.querySelector(".vw").textContent.trim() === "clunky");
+    .find((x) => x.querySelector(".vword .vw").textContent.trim() === "clunky");
   li.querySelector('[data-act="open"]').click();
 });
 await page.waitForTimeout(3000);
@@ -148,7 +178,7 @@ await page.waitForTimeout(200);
 // ---------- 3. 跳回原文那一句 ----------
 await page.evaluate(() => {
   const li = [...document.querySelectorAll("#vocab .vitem")]
-    .find((x) => x.querySelector(".vw").textContent.trim() === "expansion");
+    .find((x) => x.querySelector(".vword .vw").textContent.trim() === "expansion");
   li.querySelector('[data-act="jump"]').click();
 });
 await page.waitForTimeout(2200);
@@ -186,18 +216,18 @@ await page.evaluate(() => { location.hash = "#vocab" });
 await page.waitForTimeout(1200);
 const before = await page.evaluate(() => document.querySelectorAll("#vocab .vitem").length);
 const target = await page.evaluate(() =>
-  [...document.querySelectorAll("#vocab .vitem .vw")].map(x => x.textContent.trim()).pop() || "");
+  [...document.querySelectorAll("#vocab .vitem .vword .vw")].map(x => x.textContent.trim()).pop() || "");
 ok("生词本里还有可删的词", !!target, target);
 await page.evaluate((lemma) => { window.confirm = () => true }, target);
 await page.evaluate((lemma) => {
   const li = [...document.querySelectorAll("#vocab .vitem")]
-    .find((x) => x.querySelector(".vw").textContent.trim() === lemma);
+    .find((x) => x.querySelector(".vword .vw").textContent.trim() === lemma);
   li.querySelector('[data-act="del"]').click();
 }, target);
 await page.waitForTimeout(1500);
 const after = await page.evaluate((lemma) => ({
   n: document.querySelectorAll("#vocab .vitem").length,
-  lemmas: [...document.querySelectorAll("#vocab .vitem .vw")].map((x) => x.textContent.trim()),
+  lemmas: [...document.querySelectorAll("#vocab .vitem .vword .vw")].map((x) => x.textContent.trim()),
   status: document.getElementById("status").textContent,
 }), target);
 ok("移除后列表少一条", after.n === before - 1 && !after.lemmas.includes(target), `${target}: ${before} -> ${after.n} ${after.status}`);

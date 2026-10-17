@@ -159,21 +159,33 @@
   .expand-hint::after{content:'展开标题'}.vg-source[open] .expand-hint::after{content:'收起标题'}
   .vg-h .vc{display:block;margin-top:5px;font-size:12px;color:var(--muted)}
   .vg-h .vgo{min-height:44px;font-size:12px;color:var(--accent-ink);background:var(--cur);border:0;border-radius:12px;padding:8px 12px;white-space:nowrap;display:flex;gap:5px;align-items:center}
-  .vg ul{list-style:none;padding:0;margin:0}.vitem{display:flex;gap:12px;align-items:flex-start;padding:15px 2px;border-bottom:1px solid var(--line)}
-  .vitem:last-child{border-bottom:0;padding-bottom:2px}.vmain{flex:1;min-width:0}.vw{font:600 22px/1.2 var(--font-read)}
-  .vword{display:flex;align-items:center;gap:8px;max-width:100%;min-height:44px;border:0;background:none;padding:0;text-align:left}.vword .vw{min-width:0;overflow-wrap:anywhere}
-  .vword .icon{color:var(--muted)}
-  .vmeta{font-size:12px;color:var(--muted);margin-top:2px}.vs{font:15px/1.55 var(--font-read);color:var(--muted);margin-top:10px;
-    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.vs .vw{font-size:inherit;background:var(--mark)}
-  .vj{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-size:12px;color:var(--accent-ink);border:0;background:none;padding:4px 0}
-  .vmore{position:relative;flex:none}.vmore summary{list-style:none;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;color:var(--muted);cursor:pointer}
-  .vmore summary::-webkit-details-marker{display:none}.vmore[open] summary{background:var(--surface-2)}
+  .vg ul,.vlist{list-style:none;padding:0;margin:0}.vlist{display:grid;gap:12px}
+  .vitem{min-width:0}
+  .vlist .vitem{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:16px 20px 10px}
+  .vg .vitem{padding:16px 2px 8px;border-bottom:1px solid var(--line)}.vg .vitem:last-child{border-bottom:0;padding-bottom:0}
+  .vtop{display:flex;align-items:center;gap:10px}
+  .vword{flex:0 1 auto;min-width:0;display:flex;align-items:center;min-height:44px;border:0;background:none;padding:0;text-align:left;color:inherit;cursor:pointer}
+  .vw{font:600 27px/1.15 var(--font-read);letter-spacing:-.01em;overflow-wrap:anywhere}
+  .vcount{flex:none;font-size:11px;font-weight:650;color:var(--accent-ink);background:var(--cur);border-radius:999px;padding:2px 8px}
+  .vdel{margin-left:auto;flex:none;width:36px;height:36px;display:grid;place-items:center;border:0;border-radius:10px;background:none;color:var(--muted);opacity:.45}
+  .vdel:hover,.vdel:focus-visible{opacity:1;color:var(--danger);background:var(--surface-2)}
+  .vmeta{font-size:12px;color:var(--muted)}.vmeta .ipa{font:14px var(--font-read)}
+  .vsense{margin-top:8px;font-size:17px;line-height:1.6;color:var(--ink);font-weight:500}
+  .vsense small{display:block;margin-top:2px;font-size:11px;font-weight:400;color:var(--muted)}
+  .vpending{margin-top:4px;min-height:36px;padding:0;border:0;background:none;color:var(--muted);font-size:13px;text-decoration:underline dotted;text-underline-offset:4px;cursor:pointer}
+  .vroots{margin-top:12px;background:var(--surface-2);border-radius:14px;padding:10px 14px;font-size:14px;line-height:1.6}
+  .vroots-l{display:block;font-size:11px;font-weight:650;color:var(--accent-ink)}
+  .vroots b{font:600 15px var(--font-read)}.vplus{color:var(--muted);margin:0 6px}.vmem{margin-top:3px;font-size:13px;color:var(--muted)}
+  .vs{font:13px/1.55 var(--font-read);color:var(--muted);margin-top:12px;padding-left:10px;border-left:2px solid var(--line);
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.vs .vw{font:inherit;letter-spacing:0;color:var(--ink);background:var(--mark)}
+  .vfoot{display:flex;align-items:center;gap:12px;margin-top:6px;font-size:11.5px;color:var(--muted)}
+  .vsrc{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.vj{flex:none;margin-left:auto}
+  .vj{min-height:32px;padding:0;border:0;background:none;color:var(--muted);font-size:11.5px;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px;cursor:pointer}
+  .vj:hover,.vj:focus-visible{color:var(--accent-ink)}
   .vocab-tools{display:flex;align-items:center;gap:12px}
   .vmode{display:inline-flex;gap:3px;padding:3px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
   .vmode button{min-height:40px;padding:0 14px;border:0;border-radius:11px;background:none;color:var(--muted);font-size:13px;font-weight:600;white-space:nowrap}
   .vmode button[aria-pressed="true"]{background:var(--cur);color:var(--accent-ink)}
-  .vep{font-size:12px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .vx{position:absolute;right:0;top:48px;z-index:5;white-space:nowrap;min-height:44px;padding:10px 14px;display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--danger);box-shadow:var(--shadow)}
 
   /* Definition card */
   dialog{border:1px solid var(--line);border-radius:24px;background:var(--surface);color:var(--ink);max-width:520px;width:min(92vw,520px);padding:0;font-size:14px;line-height:1.65;box-shadow:0 30px 100px #0005;max-height:85dvh;overflow:hidden}
@@ -282,7 +294,7 @@
     ul.eps{grid-template-columns:1fr;gap:10px}.episode-card{min-height:124px;grid-template-columns:64px minmax(0,1fr) 16px;padding:12px;border-radius:18px;gap:12px}.episode-cover{width:64px;border-radius:13px}.t{font-size:14px}
     .reader-head{padding:0 4px;margin-bottom:18px}.reader-head .eyebrow{display:none}h2.ep{font-size:27px;line-height:1.2;-webkit-line-clamp:2;margin-top:0}#epMeta{font-size:12px}
     article{border:0;border-radius:0;margin:0 -14px;padding:25px 18px 80px;background:color-mix(in srgb,var(--surface) 72%,transparent);box-shadow:none}
-    .vg{border-radius:18px;padding:16px}.vg-h{gap:8px;align-items:flex-start}.vg-h .vt{font-size:15px}.vg-h .vgo{font-size:12px;padding:8px}.vitem{gap:4px}.vs{font-size:14px}
+    .vg{border-radius:18px;padding:16px}.vg-h{gap:8px;align-items:flex-start}.vg-h .vt{font-size:15px}.vg-h .vgo{font-size:12px;padding:8px}.vlist .vitem{padding:14px 16px 8px;border-radius:18px}.vw{font-size:25px}.vsense{font-size:16px}
     #vocabIntro .eyebrow,#vocabIntro .heading-count{display:none}
     #vocabIntro{flex-wrap:wrap;align-items:flex-start;gap:12px}.vocab-tools,.vmode{width:100%}.vmode button{flex:1;min-height:42px}
     dialog{position:fixed;max-width:none!important;width:100%;margin:0;inset:auto 0 0;border-radius:24px 24px 0 0;border-width:1px 0 0;padding:0 0 var(--safe-bottom);max-height:88dvh}
@@ -356,11 +368,11 @@
         <span class="heading-count">Tap to read</span>
       </div>
       <div id="vocabIntro" class="screen-heading" hidden>
-        <div><div class="eyebrow">Words worth keeping</div><h2>生词本</h2><p>按日期回顾, 或按单集回到词语第一次打动你的语境。</p></div>
+        <div><div class="eyebrow">Words worth keeping</div><h2>生词本</h2><p>最近加入的在最上面; 也可以按单集回到它们出现的语境。</p></div>
         <div class="vocab-tools">
           <span class="heading-count" id="vocabTotal"></span>
           <div class="vmode" id="vocabMode" role="group" aria-label="生词分组方式">
-            <button type="button" data-mode="date" aria-pressed="true">按日期</button>
+            <button type="button" data-mode="list" aria-pressed="true">列表</button>
             <button type="button" data-mode="episode" aria-pressed="false">按单集</button>
           </div>
         </div>
@@ -574,10 +586,19 @@ let finding = false;   // 正在定位播放头时, 暂时关掉跨句检测, �
 // 用模块级变量而不是 hash 参数: hash 已经是 #<episode_id> 了, 再往里塞句子号
 // 会和"刷新/分享链接"那套逻辑打架(见文件末尾的 popstate/hashchange)。
 let jumpSeg = null;              // 待定位的句子号, 消费一次就清掉
-const vocabState = { groups: [], items: [], total: 0, raw: 0, err: '', mode: 'date' };
-// 生词本分组方式: 'date'(默认, 按加入那天) / 'episode'(按单集)。记在 localStorage 里, 下次进来还是它。
-let vocabMode = (() => { try{ return localStorage.getItem('et.vocabMode') === 'episode' ? 'episode' : 'date' }catch{ return 'date' } })();
+const vocabState = { groups: [], items: [], total: 0, raw: 0, err: '', mode: 'list' };
+// 生词本视图: 'list'(默认, 不分组, 新加的在前) / 'episode'(按单集分组)。记在 localStorage 里, 下次进来还是它。
+// 上一版存过 'date'(按日期分组, 已取消), 读到就迁移成 'list'。
+let vocabMode = (() => {
+  try{
+    const v = localStorage.getItem('et.vocabMode');
+    if(v === 'date') localStorage.setItem('et.vocabMode', 'list');
+    return v === 'episode' ? 'episode' : 'list';
+  }catch{ return 'list' }
+})();
 let vocabReq = 0;
+// 没有释义缓存的词, 滚进视口时顺序补查几条(每次进生词本最多 budget 条, 一次只查一个)
+const vocabLazy = { budget: 0, queue: [], busy: false, io: null };
 
 // ===== 播放器状态 =====
 // 关键设计: 音频属于「playing.id」这一集, 而不是「current」(正在读的那一集)。
@@ -1736,25 +1757,27 @@ function showVocab(pushHistory){
   if(pushHistory !== false && location.hash !== '#vocab') history.pushState({}, '', '#vocab');
   // 每次都重新拉: 你刚在正文里标完词, 切过来就该看见它(读缓存会显得"没记住")
   $('#vocab').innerHTML = '<div class="empty">加载生词本…</div>';
+  vocabLazy.budget = 3; vocabLazy.queue.length = 0;
   refreshVocab();
 }
 
 async function loadVocab(){
   const req = ++vocabReq, mode = vocabMode;
   try{
-    const d = await api('/vocab/grouped?by=' + mode);
+    // brief = 释义缓存里的摘要(后端只读缓存, 不会为了画列表去花钱查词)
+    const d = await api(mode === 'list' ? '/vocab/grouped?by=list' : '/vocab/grouped?by=episode&brief=1');
     if(req !== vocabReq) return;
     vocabState.mode = mode;
-    vocabState.groups = d.groups || [];
+    vocabState.groups = mode === 'list' ? [] : (d.groups || []);
     // 单集号在分组上, 不在词条上。**必须就地把 episode_id 补进每一条**, 而不是只补
     // 拍平出来的那份副本 —— 渲染用的是 g.items, 拍平那份只给点击处理用; 两份不同步时
     // 症状是"判断条件里的字段是 undefined, 链接/跳转静默不出现"(实测踩过)。
-    // 按日期分组时单集信息本来就在每一条上(组上没有), 那就别拿 undefined 覆盖掉。
+    // 列表模式下单集信息本来就在每一条上(没有分组), 那就别拿 undefined 覆盖掉。
     if(mode === 'episode') vocabState.groups.forEach(g => (g.items || []).forEach(it => {
       it.episode_id = g.episode_id;
       it.episode_title = g.episode_title;
     }));
-    vocabState.items = vocabState.groups.flatMap(g => g.items || []);
+    vocabState.items = mode === 'list' ? (d.items || []) : vocabState.groups.flatMap(g => g.items || []);
     // 顺带把词表灌进 vocab 集合。直接从 /#vocab 进来(刷新/书签)时没走过 openEpisode,
     // 那时 vocab 是空的, 释义卡会把已经标过的词显示成「标记为生词」(实测踩过)。
     vocab = new Set(vocabState.items.map(it => String(it.lemma).toLowerCase()));
@@ -1785,44 +1808,87 @@ function fmtDay(ts){
   return m ? `${+m[2]}/${+m[3]}` : '';
 }
 
-const VOCAB_TZ = 'Asia/Shanghai';
-/** 用户时区(上海)的今天, YYYY-MM-DD。不用 new Date().getDate(): 浏览器时区不一定是上海。 */
-function tzToday(){
-  try{ return new Intl.DateTimeFormat('en-CA', {timeZone: VOCAB_TZ, year:'numeric', month:'2-digit', day:'2-digit'}).format(new Date()) }
-  catch{ return new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10) }
-}
-/** 后端给的 YYYY-MM-DD(已经是上海时区的日子) -> { main: '今天' / '10月15日 周四', sub } */
-function vocabDayLabel(ymd){
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(ymd || ''));
-  if(!m) return { main: '日期未知', sub: '' };
-  const [y, mo, d] = [+m[1], +m[2], +m[3]];
-  const t = /^(\d{4})-(\d{2})-(\d{2})$/.exec(tzToday());
-  const dayNo = (yy, mm, dd) => Math.round(Date.UTC(yy, mm - 1, dd) / 864e5);
-  const diff = t ? dayNo(+t[1], +t[2], +t[3]) - dayNo(y, mo, d) : NaN;
-  const wk = '周' + '日一二三四五六'[new Date(Date.UTC(y, mo - 1, d)).getUTCDay()];
-  const full = (t && +t[1] === y ? '' : y + '年') + `${mo}月${d}日 ${wk}`;
-  if(diff === 0) return { main: '今天', sub: full };
-  if(diff === 1) return { main: '昨天', sub: full };
-  return { main: full, sub: '' };
+/** 卡片上的释义区: 语境义为主, 词根拆解放在浅底色块里; 没缓存就只给一个低调的入口。 */
+function vocabBriefHtml(it){
+  const b = it.brief;
+  if(!b || !b.sense_here) return `<button class="vpending" data-act="open">点击查看释义</button>`;
+  const r = b.roots && (b.roots.parts || []).length ? b.roots : null;
+  return `<div class="vsense">${esc(b.sense_here)}${b.exact === false ? '<small>来自另一句的释义, 点开看这一句的</small>' : ''}</div>
+    ${r ? `<div class="vroots"><span class="vroots-l">词根拆解</span>${r.parts.map(p =>
+      `<b>${esc(p.part)}</b> ${esc(p.meaning)}`).join('<span class="vplus">+</span>')}${r.memory ? `<div class="vmem">${esc(r.memory)}</div>` : ''}</div>` : ''}`;
 }
 
 function vocabItemHtml(it){
-  const byDate = vocabState.mode === 'date';
-  const meta = [
-    byDate ? '' : fmtDay(it.created_at),
-    it.explanation_key ? '已查阅' : '',
-    it.count > 1 ? '×' + it.count : '',
+  const b = it.brief || {};
+  const meta = [b.ipa ? `<span class="ipa">${esc(b.ipa)}</span>` : '', esc(b.pos || '')].filter(Boolean).join(' · ');
+  // 底栏一行: 左边「几号加入 · 出自哪集」(太长就省略), 右边低调的跳转链接
+  const src = [
+    fmtDay(it.created_at) ? `${fmtDay(it.created_at)} 加入` : '',
+    vocabState.mode === 'list' && it.episode_title ? `<span class="vep">出自 ${esc(it.episode_title)}</span>` : '',
   ].filter(Boolean).join(' · ');
-  return `<li class="vitem" data-id="${it.id}">
-    <div class="vmain">
-      <button class="vword" data-act="open" aria-label="查看 ${esc(it.lemma)} 的释义"><span class="vw">${esc(it.lemma)}</span>${icon('chevron-right',true)}</button>
-      <div class="vmeta">${meta}</div>
-      ${byDate && it.episode_title ? `<div class="vep" title="${esc(it.episode_title)}">出自 · ${esc(it.episode_title)}</div>` : ''}
-      ${it.sentence ? `<div class="vs">${sentWithWord(it.sentence, it.surface)}</div>` : ''}
-      ${it.seg_idx != null && it.episode_id ? `<button class="vj" data-act="jump">回到原句${icon('chevron-right',true)}</button>` : ''}
+  const jump = it.seg_idx != null && it.episode_id ? `<button class="vj" data-act="jump">跳到原文这一句 →</button>` : '';
+  const foot = src || jump ? `<span class="vsrc"${it.episode_title ? ` title="${esc(it.episode_title)}"` : ''}>${src}</span>${jump}` : '';
+  return `<li class="vitem${it.brief ? '' : ' nobrief'}" data-id="${it.id}">
+    <div class="vtop">
+      <button class="vword" data-act="open" aria-label="查看 ${esc(it.lemma)} 的完整释义"><span class="vw">${esc(it.lemma)}</span></button>
+      ${it.count > 1 ? `<span class="vcount" title="标过 ${it.count} 次">×${it.count}</span>` : ''}
+      <button class="vdel" data-act="del" title="移出生词本" aria-label="把 ${esc(it.lemma)} 移出生词本">${icon('trash',true)}</button>
     </div>
-    <details class="vmore"><summary aria-label="${esc(it.lemma)} 的更多操作">${icon('more')}</summary><button class="vx" data-act="del">${icon('trash',true)}移出生词本</button></details>
+    ${meta ? `<div class="vmeta">${meta}</div>` : ''}
+    ${vocabBriefHtml(it)}
+    ${it.sentence ? `<div class="vs">${sentWithWord(it.sentence, it.surface)}</div>` : ''}
+    ${foot ? `<div class="vfoot">${foot}</div>` : ''}
   </li>`;
+}
+
+/** 点开 / 补查拿到完整释义后, 把摘要写回这条并只重画这一张卡片。 */
+function fillBrief(it, p){
+  if(!p || !p.sense_here) return;
+  const roots = p.roots || {};
+  const parts = (roots.parts || []).filter(x => x && x.part);
+  const brief = { sense_here: String(p.sense_here), pos: p.pos || '', ipa: p.ipa || '', lemma: p.lemma || '',
+                  roots: roots.available && parts.length ? { parts, memory: roots.memory || '' } : null, exact: true };
+  // 列表可能已经重拉过(对象换了新的), 按 id 把当前那份也补上
+  [it, vocabState.items.find(x => x.id === it.id)].forEach(x => { if(x) x.brief = brief });
+  const li = document.querySelector(`#vocab .vitem[data-id="${it.id}"]`);
+  if(!li) return;
+  li.outerHTML = vocabItemHtml(vocabState.items.find(x => x.id === it.id) || it);
+  const fresh = document.querySelector(`#vocab .vitem[data-id="${it.id}"]`);
+  if(fresh) bindVocabItem(fresh);
+}
+
+function observeLazyBriefs(el){
+  if(vocabLazy.io){ vocabLazy.io.disconnect(); vocabLazy.io = null }
+  if(!('IntersectionObserver' in window) || vocabLazy.budget <= 0) return;
+  vocabLazy.io = new IntersectionObserver(entries => entries.forEach(e => {
+    if(!e.isIntersecting) return;
+    vocabLazy.io.unobserve(e.target);
+    const it = vocabState.items.find(x => x.id === +e.target.dataset.id);
+    if(it && !it.brief && !vocabLazy.queue.some(x => x.id === it.id)){ vocabLazy.queue.push(it); pumpLazyBriefs() }
+  }));
+  el.querySelectorAll('.vitem.nobrief').forEach(li => vocabLazy.io.observe(li));
+}
+
+async function pumpLazyBriefs(){
+  if(vocabLazy.busy) return;
+  vocabLazy.busy = true;
+  try{
+    while(vocabLazy.queue.length && vocabLazy.budget > 0 && $('#vocab').style.display !== 'none'){
+      const it = vocabLazy.queue.shift();
+      if(it.brief) continue;
+      vocabLazy.budget--;
+      const q = new URLSearchParams();
+      if(it.episode_id) q.set('episode_id', it.episode_id);
+      if(it.seg_idx != null) q.set('seg_idx', String(it.seg_idx));
+      try{
+        const r = await api('/vocab/' + encodeURIComponent(it.lemma) + '/explain?' + q.toString());
+        fillBrief(it, r && r.payload);
+      }catch{
+        // 查不了(没配 key / 上游挂了 / 离线)就别一条条接着撞, 等用户自己点开
+        vocabLazy.budget = 0; vocabLazy.queue.length = 0;
+      }
+    }
+  }finally{ vocabLazy.busy = false }
 }
 
 function renderVocab(){
@@ -1841,15 +1907,9 @@ function renderVocab(){
     return;
   }
   syncVocabMode();
-  el.innerHTML = vocabState.mode === 'date' ? vocabState.groups.map(g => {
-    const day = vocabDayLabel(g.date);
-    return `
-    <div class="vg vg-day" data-date="${esc(g.date || '')}">
-      <div class="vg-h">
-        <div class="vg-source"><span class="vt">${esc(day.main)}</span><span class="vc">${day.sub ? esc(day.sub) + ' · ' : ''}${g.items.length} 个词</span></div>
-      </div>
-      <ul>${g.items.map(vocabItemHtml).join('')}</ul>
-    </div>`}).join('') : vocabState.groups.map(g => `
+  el.innerHTML = vocabState.mode === 'list'
+    ? `<ul class="vlist">${vocabState.items.map(vocabItemHtml).join('')}</ul>`
+    : vocabState.groups.map(g => `
     <div class="vg">
       <div class="vg-h">
         <details class="vg-source"><summary><span class="vt">${esc(g.episode_title || '(未知单集)')}</span><span class="vc">${g.items.length} 个词 · <span class="expand-hint"></span></span></summary></details>
@@ -1858,39 +1918,37 @@ function renderVocab(){
       <ul>${g.items.map(vocabItemHtml).join('')}</ul>
     </div>`).join('');
   bindVocab(el);
+  observeLazyBriefs(el);
   syncViewChrome();
   $('#status').textContent = `${vocabState.total} 个生词`
     + (vocabState.raw > vocabState.total ? `(共标过 ${vocabState.raw} 次)` : '');
 }
 
+function bindVocabItem(li){
+  const id = +li.dataset.id;
+  const it = vocabState.items.find(x => x.id === id);
+  if(!it) return;
+  li.querySelectorAll('[data-act="open"]').forEach(b => { b.onclick = () => openVocabWord(it) });
+  const j = li.querySelector('[data-act="jump"]');
+  if(j) j.onclick = ev => { ev.stopPropagation(); jumpToWord(it) };
+  li.querySelector('[data-act="del"]').onclick = async () => {
+    // 先问一句: 删掉不可逆, 而且这个按钮紧挨着词本身, 很容易误触
+    if(!confirm('从生词本移除「' + it.lemma + '」?')) return;
+    try{
+      await api('/vocab/' + id, {method:'DELETE'});
+      vocab.delete(String(it.lemma).toLowerCase());
+      await refreshVocab();
+      $('#status').textContent = '已移除: ' + it.lemma;
+    }catch(err){ $('#status').textContent = '移除失败: ' + err.message }
+  };
+}
+
 function bindVocab(el){
-  el.querySelectorAll('.vitem').forEach(li => {
-    const id = +li.dataset.id;
-    const it = vocabState.items.find(x => x.id === id);
-    if(!it) return;
-    li.querySelector('[data-act="open"]').onclick = ev => {
-      openVocabWord(it);
-    };
-    const j = li.querySelector('[data-act="jump"]');
-    if(j) j.onclick = ev => { ev.stopPropagation(); jumpToWord(it) };
-    li.querySelector('[data-act="del"]').onclick = async () => {
-      // 先问一句: 删掉不可逆, 而且这个 ✕ 紧挨着"点开看释义", 很容易误触
-      if(!confirm('从生词本移除「' + it.lemma + '」?')) return;
-      try{
-        await api('/vocab/' + id, {method:'DELETE'});
-        vocab.delete(String(it.lemma).toLowerCase());
-        await refreshVocab();
-        $('#status').textContent = '已移除: ' + it.lemma;
-      }catch(err){ $('#status').textContent = '移除失败: ' + err.message }
-    };
-  });
+  el.querySelectorAll('.vitem').forEach(bindVocabItem);
   el.querySelectorAll('.vgo').forEach(b => {
     b.onclick = () => { jumpSeg = null; openEpisode(b.dataset.ep, true) };
   });
 }
-document.addEventListener('click', e => {
-  document.querySelectorAll('.vmore[open]').forEach(menu => { if(!menu.contains(e.target)) menu.open = false });
-});
 
 function syncVocabMode(){
   document.querySelectorAll('#vocabMode [data-mode]').forEach(b =>
@@ -1898,7 +1956,7 @@ function syncVocabMode(){
 }
 document.querySelectorAll('#vocabMode [data-mode]').forEach(b => {
   b.onclick = () => {
-    const mode = b.dataset.mode === 'episode' ? 'episode' : 'date';
+    const mode = b.dataset.mode === 'episode' ? 'episode' : 'list';
     if(mode === vocabMode) return;
     vocabMode = mode;
     try{ localStorage.setItem('et.vocabMode', mode) }catch(e){}
@@ -1947,6 +2005,7 @@ async function openVocabWord(it){
     if(it.seg_idx != null) q.set('seg_idx', String(it.seg_idx));
     // renderDef 自己写 DOM(不返回 HTML), 所以这里只 await, 不要再套一层 innerHTML 赋值
     const result = await api('/vocab/' + encodeURIComponent(it.lemma) + '/explain?' + q.toString());
+    fillBrief(it, result && result.payload);
     if(request === definitionRequest && $('#pop').open) renderDef(result);
   }catch(err){
     if(request === definitionRequest && $('#pop').open) $('#pBody').innerHTML = '<div class="m">查不到释义: ' + esc(err.message) + '</div>';
