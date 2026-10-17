@@ -409,15 +409,11 @@ function offlineEpisode(id){
   return (c.data.episodes || []).find(e => e.episode.id === id) || null;
 }
 
-// 服务端 token。设了 ET_TOKEN 时, 后端会把 token 注入到这里的 __ET_TOKEN__;
-// 也支持 ?token=xxx 手输一次(存本地, 之后所有请求自动带上)。
+// 服务端 token。设了 ET_TOKEN 时, 首次用 ?token=xxx 打开一次(存本地, 之后所有请求自动带上)。
+// 后端不再把 token 注入页面: / 是公开的外壳, 注入等于把 token 发给任何能访问 / 的人
+// (要走 Cloudflare Tunnel 暴露到公网, 这就是直接泄露)。
 // 不设 token 时这里是空串, 一切照旧。
 const ET_TOKEN = (() => {
-  // 占位符本身要当成"服务端没注入 token"来处理。
-  // 之前判据写错, 导致没设 token 的部署里 ET_TOKEN 变成字面量 '__ET_TOKEN__',
-  // 于是每个请求都带上一个假 token, 从地址栏点进来的 ?token= 也永远不会被存下来。实测踩过。
-  const raw = '__ET_TOKEN__';
-  const injected = raw.indexOf('__ET_') === 0 ? '' : raw;
   const fromUrl = new URLSearchParams(location.search).get('token');
   if(fromUrl){
     try{ localStorage.setItem('et.token', fromUrl) }catch(e){}
@@ -425,9 +421,13 @@ const ET_TOKEN = (() => {
     try{ history.replaceState(null, '', location.pathname + location.hash) }catch(e){}
     return fromUrl;
   }
-  if(injected) return injected;
   try{ return localStorage.getItem('et.token') || '' }catch(e){ return '' }
 })();
+// 给浏览器自己发起、带不了请求头的地址(audio src 等)补上 ?token=
+function withToken(p){
+  if(!ET_TOKEN) return p;
+  return p + (p.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(ET_TOKEN);
+}
 function apiHeaders(extra){
   const h = Object.assign({}, extra || {});
   if(ET_TOKEN) h['Authorization'] = 'Bearer ' + ET_TOKEN;
@@ -443,7 +443,9 @@ const api = (p, o) => {
     if (!r.ok){
       const err = new Error(j.detail || r.status);
       err.status = r.status;
-      if(r.status === 401) err.message = '未授权: token 不对或没带(在地址后加 ?token=你的token)';
+      if(r.status === 401) err.message = ET_TOKEN
+        ? '未授权: 本机保存的 token 不对, 请用 地址/?token=你的token 重新打开一次'
+        : '未授权: 还没有 token, 请用 地址/?token=你的token 打开一次(之后会记住)';
       throw err;
     }
     return j;
@@ -1058,7 +1060,7 @@ function ensureAudio(){
     // 清空 src / 换源的过程中, 浏览器一定会补发一次 error(MEDIA_ERR_SRC_NOT_SUPPORTED)。
     // 那不是真的加载失败, 报出来只会让人以为音频坏了(实测踩过: 停止播放后状态栏显示"加载失败")。
     if(!audio.currentSrc && (!audio.getAttribute('src') || audio.error?.code === 4)) return;
-    $('#status').textContent = '音频加载失败, 检查这一集的音频是否还在 Mac 上';
+    $('#status').textContent = '音频加载失败, 检查这一集的音频是否还在 Mac 上(或 token 是否有效)';
   });
   // 源文件播完(转录时间轴有时会超出音频本身, 这时它会比"最后一句"更早触发)
   audio.addEventListener('ended', () => {
@@ -1105,7 +1107,8 @@ function loadEpisode(ep){
   playing.primed = null;
   anchorIdx = -1;
   if(audio) { audio.pause(); audio.currentTime = 0 }
-  a.src = `/episodes/${ep.id}/audio`;
+  // <audio> 发不了 Authorization 头, 只能把 token 放在 query 里(后端中间件认 ?token=)
+  a.src = withToken(`/episodes/${ep.id}/audio`);
   a.load();
   showPlayer();
   syncPlayerUI();

@@ -42,7 +42,8 @@ HOST = os.environ.get("ET_HOST", "0.0.0.0")
 PORT = int(os.environ.get("ET_PORT", "8787"))
 # 单一 token; 不设则完全不校验(仅限本机调试)。
 # 设了之后: 页面外壳/manifest/图标 仍然公开(否则页面本身就是 401 的 JSON,
-# 连"输入 token"的机会都没有), 由 / 把 token 注入页面, 前端再带在请求头上。
+# 连"输入 token"的机会都没有), 但外壳里不再注入 token —— 注入等于把 token 发给
+# 任何能打开 / 的人(暴露到公网后就是泄露)。首次用 /?token=xxx 打开, 前端记在本地。
 TOKEN = os.environ.get("ET_TOKEN", "")
 
 # 转录

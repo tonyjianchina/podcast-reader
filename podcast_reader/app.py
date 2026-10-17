@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import asyncio
+import hmac
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -45,7 +46,10 @@ app = FastAPI(title="Podcast Reader", lifespan=lifespan)
 # - /health 是探活;
 # - / 是页面外壳本身。如果连外壳都 401, 浏览器里只会看到一坨 JSON, 用户连
 #   "把 token 填进去"的机会都没有(实测: 设了 ET_TOKEN 之后整个 App 打不开)。
-#   外壳里通过 __ET_TOKEN__ 把 token 注入给前端, 之后的接口请求才带得上。
+#   但外壳里绝不能带真 token: 以前 / 会把 token 注入页面, 等于谁能打开 / 谁就拿到
+#   token(走 Cloudflare Tunnel 暴露到公网后就是直接泄露)。现在外壳原样返回,
+#   用户首次用 /?token=xxx 打开, 前端存进 localStorage, 之后带在 Authorization 头上;
+#   <audio> 这类带不了请求头的, 前端把 token 拼在 ?token= 上。
 PUBLIC_PATHS = ("/health", "/", "/manifest.webmanifest", "/icon.svg")
 
 
@@ -62,8 +66,12 @@ def _supplied_token(request: Request) -> str:
 async def auth(request: Request, call_next):
     if TOKEN and request.url.path not in PUBLIC_PATHS:
         supplied = _supplied_token(request) or request.query_params.get("token", "")
-        if supplied != TOKEN:
-            return JSONResponse({"detail": "unauthorized"}, status_code=401)
+        # 常量时间比较, 免得按响应时间逐字符猜 token
+        if not hmac.compare_digest(supplied.encode(), TOKEN.encode()):
+            return JSONResponse(
+                {"detail": "unauthorized: 请用 /?token=你的token 打开一次页面"},
+                status_code=401,
+            )
     return await call_next(request)
 
 
@@ -72,10 +80,8 @@ async def auth(request: Request, call_next):
 
 @app.get("/", response_class=HTMLResponse)
 async def index() -> HTMLResponse:
+    # 外壳是公开的, 所以这里不注入任何 token(见 PUBLIC_PATHS 的说明)。
     html = (WEB_DIR / "index.html").read_text(encoding="utf-8")
-    if TOKEN:
-        # 只注入到页面里, 不进日志、不进 URL。前端 api() 会带在 Authorization 头上。
-        html = html.replace("__ET_TOKEN__", TOKEN)
     return HTMLResponse(html)
 
 

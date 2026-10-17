@@ -82,6 +82,31 @@
     if (raw.status !== 401) throw new Error(`不带 token 的裸请求应该 401, 实际 ${raw.status}`);
   });
 
+  T("K7", "页面外壳里没有真 token(/ 是公开的, 注入就等于泄露)", [
+    "不带任何 token 直接 GET /, 看返回的 HTML 里有没有 token",
+  ], async () => {
+    const token = localStorage.getItem("et.token");
+    if (!token) throw new Error("前置: localStorage 里应该已有 token");
+    const r = await fetch("/");
+    if (r.status !== 200) throw new Error(`外壳应该公开可访问, 实际 ${r.status}`);
+    const html = await r.text();
+    if (html.includes(token)) throw new Error("页面 HTML 里出现了真 token");
+  });
+
+  T("K8", "音频(带不了请求头)通过 ?token= 也能拿到, 不带则 401", [
+    "取一集, 分别不带/带 ?token= 请求 /episodes/{id}/audio",
+  ], async () => {
+    const eps = await api("/episodes");
+    if (!eps.length) throw new Error("前置: 列表为空");
+    const id = eps[0].id;
+    const raw = await fetch(`/episodes/${id}/audio`, { headers: { Range: "bytes=0-15" } });
+    if (raw.status !== 401) throw new Error(`不带 token 的音频请求应该 401, 实际 ${raw.status}`);
+    const src = withToken(`/episodes/${id}/audio`);
+    if (!/[?&]token=/.test(src)) throw new Error(`音频地址没带 token: ${src.replace(/token=[^&]+/, "token=***")}`);
+    const ok = await fetch(src, { headers: { Range: "bytes=0-15" } });
+    if (ok.status === 401) throw new Error("带了 ?token= 的音频请求仍然 401");
+  });
+
   function list() {
     return CASES.map((c) => ({ id: c.id, area: c.area, title: c.title, repro: c.repro, phase: c.phase, skip: false }));
   }
