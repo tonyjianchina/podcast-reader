@@ -1594,7 +1594,7 @@ function renderDef(r, target){
       ${d.lemma&&d.lemma!==pendingWord.word? ' · 原形 '+esc(d.lemma):''}</div>
     ${pendingWord.sentence ? `<blockquote class="def-context">${esc(pendingWord.sentence)}</blockquote>` : ''}
     ${d.caution? `<div class="field m">提示：${esc(d.caution)}</div>`:''}
-    <details class="def-extra"><summary>词根与记忆${icon('chevron-down',true)}</summary>${rootBlock}</details>
+    <details class="def-extra" open><summary>词根与记忆${icon('chevron-down',true)}</summary>${rootBlock}</details>
     ${(d.other_senses||[]).length? `<details class="def-extra"><summary>其他常见义${icon('chevron-down',true)}</summary><ul>${li(d.other_senses)}</ul></details>`:''}
     ${(d.related?.words||[]).length || (d.related?.sentences||[]).length ? `<details class="def-extra"><summary>关联词与例句${icon('chevron-down',true)}</summary>
       ${(d.related?.words||[]).length? `<ul>${li(d.related.words)}</ul>`:''}
