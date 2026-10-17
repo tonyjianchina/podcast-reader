@@ -1,7 +1,7 @@
-# 英语学习 App — 设计文档
+# Podcast Reader — 设计文档
 
-> 状态:设计已定稿(经 grilling 逐项收敛)
-> 定稿日期:本次会话
+> 状态:设计已定稿(经 grilling 逐项收敛);2026-10-17 按代码现状修订(路线图、API、D6、D16 等)
+> 首次入库:2026-10-11(git 首次提交 b87c036)
 > 落地机器:MacBook Pro M5 / 32GB / 629GB 可用
 
 ---
@@ -52,6 +52,8 @@ Whisper 转录(large-v3,强制 language=en,喂热词表)
    ↓
 AI 分段(只允许决定「在哪里换行」)
    ↓
+逐句中译(DeepSeek,按句缓存;失败不影响可读)
+   ↓
 入库(SQLite)→ Bark 推送「《xxx》可以读了」
    ↓
 App 里读:点句播放 / 标生词 / AI 查词(缓存)/ 生词本与跨集重逢高亮
@@ -70,11 +72,11 @@ App 里读:点句播放 / 标生词 / AI 查词(缓存)/ 生词本与跨集重�
 | # | 决策 | 结论 | 理由 / 代价 |
 |---|---|---|---|
 | D1 | 使用范围 | 只给自己用 | 个性化是核心价值;绕开版权/多租户/计费 |
-| D2 | 使用面 | iPhone 原生 App | 「随时随地」;Mac 只做后端 |
+| D2 | 使用面 | iPhone 原生 App | 「随时随地」;Mac 只做后端。**现状**:App(阶段 2)未开始,先用网页 + PWA(加到主屏)过渡 |
 | D3 | 平台 | iOS + Expo / React Native / TS | 开发期 Expo Go 扫码,绕开免费签名 7 天过期 |
 | D4 | 网络 | Tailscale,Mac 常开 | 免费、不出公网、无需内网穿透配置 |
 | D5 | 后端地址 | 设置在 App 里**手填**(固定 IP 或 MagicDNS 名) | 不做服务发现;失败时可归因 |
-| D6 | 转录引擎 | **本地 MLX Whisper `large-v3`** | 零边际成本、无时长上限、隐私。**实测约 4 倍实时**(M5 32GB,180 秒音频 43 秒转完),即 1 小时播客约 15 分钟;比设计初估的 10 倍实时慢一倍多 |
+| D6 | 转录引擎 | **本地 MLX Whisper `large-v3`** | 零边际成本、无时长上限、隐私。**实测约 4~6 倍实时**(M5 32GB):早期 3 分钟切片 180 秒音频 43 秒转完(≈4.2 倍);后来整集实测 44 分钟约 7.7 分钟(≈5.7 倍,见 README)。短切片里固定开销占比更高,可能是倍率偏低的原因(未单独测量)。即 1 小时播客约 10~15 分钟;比设计初估的 10 倍实时慢不少 |
 | D7 | 转录范围 | **只转导入的那一集** | 用户明确选择;不做轮询、不全量 |
 | D8 | 通知 | Bark | 一个 HTTP 请求推锁屏,零成本、无需 APNs 证书 |
 | D9 | 导入方式 | 接受任意分享链接,后端尽力解析成 RSS | 用户在客户端里只有分享链接;解析失败给手动填 RSS 的退路 |
@@ -84,7 +86,7 @@ App 里读:点句播放 / 标生词 / AI 查词(缓存)/ 生词本与跨集重�
 | D13 | 释义模型 | 云端 API,**默认 DeepSeek**,做成可替换 provider | 查词错一次就记错一次;Mac 算力留给 Whisper |
 | D14 | 释义缓存 | 键 = `规范化单词 + 所在句子` 哈希;命中秒开、断网可看 | 一天点几十次且大量重复,不缓存则钱和延迟都爆炸 |
 | D15 | 播放对齐 | 句级时间戳;数据模型预留一句多锚点 | 读为主;词级留给以后 |
-| D16 | 排版 | 衬线正文、字号可调 16~24、行高默认 1.8(可调 1.55~2.1)、深浅色、生词弱高亮、当前句淡底、**自动滚动默认开,主动滑动后停止跟随** | 读 1 小时正文,排版即产品力 |
+| D16 | 排版 | 衬线正文、字号可调 16~24、行高默认 1.8(可调 1.55~2.1)、深浅色、生词弱高亮、当前句淡底、**跟随滚动默认开**,手动滑离当前句超过约 110px 自动停止跟随,「定位当前句」恢复(**已修订**:原定「自动滚动默认关」) | 读 1 小时正文,排版即产品力。原定默认关是怕页面一直在脚下移动(实测反馈:"自动划到底部, 标识也消失");改为默认开 + 滑屏即自动退出跟随,点开就能跟着读,又不和你抢屏幕(见 `web/index.html` 中 `autoScroll` / `UNFOLLOW_PX` 的注释) |
 | D17 | AI 分段的铁律 | **AI 只输出分隔符位置(句子索引),绝不输出文本** | 防改写污染原文;校验失败即退回机械分段 |
 | D18 | 复习机制 | 生词本 + **跨集重逢高亮**;不做 SRS、不做打卡 | 重逢服务听力目标且零成本;SRS 会把兴趣变作业 |
 | D19 | 音频存储 | Mac 为唯一原件;iPhone 按需缓存整集,上限 N 集自动清最旧 | 通勤断网必须能读能查词 |
@@ -119,7 +121,7 @@ episodes(
   audio_path TEXT,                 -- Mac 本地原件
   audio_url TEXT,                  -- 源站地址
   duration_sec REAL,
-  state TEXT NOT NULL,             -- pending|downloading|transcribing|segmenting|ready|failed
+  state TEXT NOT NULL,             -- pending|downloading|transcribing|segmenting|translating|ready|failed
   error TEXT,
   created_at TEXT, updated_at TEXT,
   UNIQUE(show_id, guid)
@@ -146,10 +148,20 @@ paragraphs(
   UNIQUE(episode_id, idx)
 )
 
+-- 逐句中译:和段落一样只按句索引对应,按句生成一次、永久缓存
+translations(
+  id INTEGER PRIMARY KEY,
+  episode_id TEXT REFERENCES episodes(id),
+  seg_idx INTEGER NOT NULL,
+  text TEXT NOT NULL,
+  model TEXT, created_at TEXT,
+  UNIQUE(episode_id, seg_idx)
+)
+
 -- 用户标注的生词
 vocab_items(
   id INTEGER PRIMARY KEY,
-  lemma TEXT NOT NULL,             -- 规范化后的词/短语
+  lemma TEXT NOT NULL,             -- 规范化后的词/短语(目前只做 trim + 小写,未做词形还原)
   surface TEXT,                    -- 原文中的形态
   sentence TEXT,                   -- 语境,记忆钩子
   episode_id TEXT, seg_idx INTEGER,
@@ -176,34 +188,49 @@ CREATE INDEX idx_vocab_lemma ON vocab_items(lemma);
 
 ```
 ┌──────────────────────── Mac(常开,后端)────────────────────────┐
-│  FastAPI  (:8787, bearer token)                               │
+│  FastAPI  (:8787, 可选 bearer token:ET_TOKEN)                 │
+│    GET  /                     → 阅读页(不注入 token)          │
+│    GET  /health               → 探活 + worker 状态            │
+│    GET  /manifest.webmanifest  /icon.svg → PWA                │
 │    POST /import              {url}     → episode_id           │
-│    GET  /episodes                       → 列表+状态            │
-│    GET  /episodes/{id}                  → 段落+句子+时间戳      │
-│    POST /define              {word,sentence,episode_id}       │
+│    GET  /episodes                       → 列表+状态           │
+│    GET  /episodes/{id}                → 段落+句子+时间戳+中译 │
+│    POST /episodes/{id}/translate        → 补生成逐句中译      │
+│    POST /episodes/{id}/retry            → 重新入队续跑        │
+│    GET  /episodes/{id}/audio  /audio.info → 音频 / 大小时长   │
+│    POST /define              {word,sentence[,use_cache]}      │
 │    GET  /vocab  POST /vocab  DELETE /vocab/{id}               │
+│    GET  /vocab/grouped                  → 生词本(按单集分组)  │
+│    GET  /vocab/{lemma}/explain?episode_id=&seg_idx=           │
+│                                         → 按标记时原句查释义  │
 │    POST /sync                → 全量文本+词义(给手机)          │
+│    ※ 重转录只有 CLI:et retranscribe <id>,无 HTTP 接口         │
 │                                                               │
-│  Worker(单并发,DB 持久化状态,可重启续跑)                     │
-│    resolve   → 分享链 → RSS feed_url                           │
-│    fetch     → yt-dlp 下载音频                                  │
-│    transcribe→ mlx-whisper large-v3 → segments                 │
-│    segment   → DeepSeek:只输出段落边界索引                      │
-│    notify    → Bark                                            │
+│  Worker(单并发,DB 持久化状态,可重启续跑)                      │
+│    resolve   → 分享链 → RSS feed_url                          │
+│    fetch     → yt-dlp 下载音频                                │
+│    transcribe→ mlx-whisper large-v3(4 分钟分块)→ segments     │
+│    segment   → DeepSeek:只输出段落边界索引                    │
+│    translate → DeepSeek:逐句中译(失败不阻塞)                  │
+│    notify    → Bark                                           │
 │                                                               │
-│  存储:/data/audio/{show}/{episode}.m4a                        │
-│        /data/app.db  (SQLite, WAL)                            │
+│  存储:data/audio/{show}/{episode_id}-{标题}.{ext}             │
+│        data/app.db  (SQLite, WAL)                             │
 └───────────────────────────────────────────────────────────────┘
         ▲ Tailscale(私有网络)
-        │ HTTPS/HTTP + bearer token
-┌───────┴──────────────── iPhone(Expo App)─────────────────────┐
+        │ HTTPS/HTTP(可选 bearer token)
+┌───────┴──── iPhone(Expo App,阶段 2,尚未开始)──────────────────┐
 │  列表 → 阅读页(排版/点句播放)→ 释义卡 → 生词本               │
 │  本地缓存:全量文本 + 全量词义 + 当前集音频                     │
 │  断网可读、可查已缓存的词;新导入需连回 Mac                     │
 └───────────────────────────────────────────────────────────────┘
 ```
 
-**运行环境现状(已核实):** Python 3.14(本项目用 uv 固定 3.12)/ Node v26 / pnpm / ffmpeg / yt-dlp 2025.10.14 / uv。
+**访问方式:** `ET_TOKEN` 未设置或为空时不校验 token;当前部署保持免 token 访问。
+若主动设置 `ET_TOKEN`,首次用 `/?token=xxx` 授权,由浏览器保存并在请求中携带;
+公开页面不包含真实 token。免 token 部署应限制在可信网络内。
+
+**运行环境现状(已核实):** Python 3.14(本项目用 uv 固定 3.12)/ Node v26 / pnpm / ffmpeg / yt-dlp(`uv.lock` 锁定 2026.8.19)/ uv。
 
 **技术选型说明:** 后端统一用 Python(FastAPI),因为转录管线(mlx-whisper、feedparser)全在 Python 生态,跨语言拆分会引入无谓的 IPC。Phase 1 的临时阅读界面直接用 FastAPI 吐一个静态页,不引入 Node。
 
@@ -246,27 +273,48 @@ CREATE INDEX idx_vocab_lemma ON vocab_items(lemma);
 ⑤ 关联词 / 关联句
 ```
 
-- 缓存命中:秒开、零成本、断网可用。
-- 未命中且断网:显示「需要连接 Mac 才能查询」,不阻塞阅读。
+- 缓存命中:秒开、零成本、断网可用(断网可用依赖手机端本地缓存,属阶段 2;网页版目前没有写入离线缓存)。
+- 未命中且断网:显示「需要连接 Mac 才能查询」,不阻塞阅读。(App 阶段的设计;当前网页版只显示原始网络错误。)
 - 释义 JSON 存 `explanations.payload_json`,渲染在客户端。
 
 ---
 
 ## 8. 路线图
 
-### 阶段 1 — 让管线跑通(纯 Mac,没有 App)
+> 状态按 2026-10-17 的代码核对:✅ 已完成 / ⚠️ 部分完成 / ❌ 未做。
+
+### 阶段 1 — 让管线跑通(纯 Mac,没有 App)— ✅ 已完成
 `import → 解析 RSS → 下载音频 → Whisper 转录 → AI 分段 → SQLite → 一个最丑的本地网页用来读`
 
-**目的:尽早验证「转录质量够不够好」。** 如果 Whisper 的文本你读不下去,后面全白做。这是全局最大风险,必须最先验证。
+**目的:尽早验证「转录质量够不够好」。** 如果 Whisper 的文本你读不下去,后面全白做。这是全局最大风险,必须最先验证。(已验证,见 §9。)
 
-### 阶段 2 — App 骨架
+- ✅ 整条管线(`pipeline.py`),每阶段落库、可断点续跑(D22)
+- ✅ 句级时间戳;长音频 4 分钟分块转录防漂移(`transcribe.py`),老转录可 `et retranscribe` 校准
+- ✅ AI 分段 + 铁律校验 + 二分重试 / 机械兜底(`segment.py`,§6)
+- ✅ 网页阅读界面(`web/index.html`),超出原计划:逐句中译、电脑常驻播放器 / 手机迷你播放器与学习面板、响应式布局、播放位置记忆
+
+### 阶段 2 — App 骨架 — ❌ 未开始
 Expo App:内容列表 → 阅读页(排版、点句播放、进度)→ 音频缓存 → 连接 Mac API。
 
-### 阶段 3 — 学习闭环
+- ❌ Expo / iOS App:仓库中没有 App 代码
+- ❌ 客户端音频缓存(D19)、全量文本离线(D20):后端 `POST /sync` 已实现,但目前没有调用方
+- 过渡方案:网页 + PWA(加到主屏后全屏运行),已覆盖列表 → 阅读 → 点句播放 → 进度
+
+### 阶段 3 — 学习闭环 — ⚠️ 大部分完成
 点词 → 释义卡 → 词义缓存 → 生词本 → 跨集重逢高亮。
 
-### 阶段 4 — 顺手化
+- ✅ 点词 → 释义卡(`define.py`,§7)
+- ✅ 词义缓存(键 = `sha256(小写词 + '\x00' + 句子)`)
+- ✅ 生词标记 + 生词本页(`#vocab`,`GET /vocab/grouped`、`GET /vocab/{lemma}/explain`)
+- ⚠️ 跨集重逢高亮:标过的词会在所有单集里按同一词形(小写)高亮;尚无词形还原,也没有「在别的集里重逢」的专门提示 / 回链
+
+### 阶段 4 — 顺手化 — ⚠️ 部分完成
 Bark 推送 → Tailscale 远程地址配置 → 分享扩展 / 剪贴板自动读取 → 导出 Markdown/CSV。
+
+- ✅ Bark 推送(`notify.py`,转录 / 重转录完成后推送)
+- ✅ Tailscale 远程访问:服务默认监听 `0.0.0.0:8787`,`ET_TOKEN` 鉴权可选(当前部署未启用),网页直接用 Tailscale 地址打开;「在 App 里手填地址」(D5)随 App 未做
+- ❌ 分享扩展 / 剪贴板自动读取
+- ❌ 导出 Markdown/CSV
 
 ---
 
@@ -280,4 +328,4 @@ Bark 推送 → Tailscale 远程地址配置 → 分享扩展 / 剪贴板自动�
 | DeepSeek 分段返回非法索引 | 阶段 1 | 校验 + 机械分段兜底(已经是设计的一部分) |
 | 中文播客混入 | 后期 | 强制 `language=en` 已定;中文内容不作为目标场景 |
 | 免费签名 7 天过期 | 阶段 2 | 用 Expo Go 开发;要真机常驻再考虑 $99 开发者账号 |
-| 转录期间机器被打满 | 持续 | 约 4 倍实时,1 小时播客约 15 分钟满载。放在你不在用电脑的时候导入 |
+| 转录期间机器被打满 | 持续 | 约 4~6 倍实时(见 D6),1 小时播客约 10~15 分钟满载。放在你不在用电脑的时候导入 |
