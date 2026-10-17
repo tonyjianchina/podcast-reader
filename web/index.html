@@ -82,7 +82,7 @@
   .nav-item svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
   .nav-item.active{color:var(--ink);font-weight:650}
   .nav-item.active::before{content:"";position:absolute;top:1px;width:22px;height:3px;border-radius:9px;background:var(--accent)}
-  #vocabCount{display:none}.nav-label{white-space:nowrap}
+  .nav-label{white-space:nowrap}
 
   /* Home */
   #homeHero{max-width:1080px;margin:0 auto;padding:38px 28px 0}
@@ -392,7 +392,7 @@
   </button>
   <button id="vocabBtn" class="nav-item" title="统一看所有标记过的生词" aria-label="生词本">
     <span data-icon="vocabulary"></span>
-    <span class="nav-label">生词本 <b id="vocabCount"></b></span>
+    <span class="nav-label">生词本</span>
   </button>
 </nav>
 
@@ -1712,11 +1712,6 @@ function syncViewChrome(){
   const inReader = getComputedStyle($('#reader')).display !== 'none';
   const inVocab = !inReader && getComputedStyle($('#vocab')).display !== 'none';
   const inList = !inReader && !inVocab;
-  const n = $('#vocabCount');
-  if(n){
-    n.textContent = vocabState.total ? '· ' + vocabState.total : '';
-    n.style.display = vocabState.total ? 'inline' : 'none';
-  }
   document.body.dataset.view = inReader ? 'reader' : (inVocab ? 'vocab' : 'library');
   document.body.classList.toggle('reading', inReader);
   $('#homeHero').hidden = !inList;
