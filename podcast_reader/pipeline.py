@@ -233,15 +233,17 @@ async def worker() -> None:
             "SELECT id FROM episodes WHERE state NOT IN ('ready','failed')"
         ).fetchall()
         ids = [r["id"] for r in rows]
-    # 续跑: 先把中断的单集状态回退成 pending, 再抢。
-    # 以前直接对 downloading/transcribing/... 调 claim_for_state(它只认 pending),
-    # 于是这些单集永远不会被重新入队, 却还打印"续跑 N 个" —— 那行日志在撒谎。
+    # 续跑: 只把中断的单集回退成 pending 再入队, **不在这里抢占**。
+    # 抢占统一由下面的主循环做(claim_for_state 只认 pending)。
+    # 以前这里先抢一次(pending -> downloading)再入队, 主循环再抢第二次时状态已经
+    # 不是 pending, 抢占失败, 这集被静默跳过, 永远卡在 downloading。
+    # 同一 id 被重复入队也不会重复处理: 第二次抢占时状态已不是 pending。
+    # 各步骤自己检查已有产物(音频/句子/段落/译文), 所以从断点继续, 不会重做。
     resumed = 0
     for episode_id in ids:
         db.set_state(episode_id, "pending")
-        if db.claim_for_state(episode_id, "downloading"):
-            await _queue.put(episode_id)
-            resumed += 1
+        await _queue.put(episode_id)
+        resumed += 1
     if ids:
         print(f"[worker] 续跑中断的任务: {resumed}/{len(ids)} 个", flush=True)
 
